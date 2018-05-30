@@ -5,7 +5,7 @@ TIPI BACKEND
 
 ```
 pip install -r requirements.txt
-python setup.py
+python setup.py develop
 ```
 
 ## Load data
@@ -16,5 +16,5 @@ python setup.py
 ## Run
 
 ```
-python tipi_engine/app.py
+python tipi_backend/app.py
 ```
