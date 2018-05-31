@@ -29,16 +29,16 @@ ns = api.namespace('initiatives', description='Operations related to initiatives
 @ns.param(name='reference', description='Reference', type=str, default='', location=['query'], help='Invalid reference')
 @ns.param(name='type', description='Type', type=str, default='', location=['query'], help='Invalid type')
 # TODO: Terminar de completar los estados
-@ns.param(name='state', description='State', type=str, default='Aprobada', choices=('Aprobada', 'Rechazada'), location=['query'], help='Invalid state')
+@ns.param(name='state', description='State', type=str, default='', choices=('Aprobada', 'Rechazada'), location=['query'], help='Invalid state')
 @ns.param(name='title', description='Title', type=str, default='', location=['query'], help='Invalid title')
 # Common parameters
 @ns.param('limit', 'Limit', type=int, default=20, location=['query'], help='Invalid limit')
 @ns.param('offset', 'Offset', type=int, default=0, location=['query'], help='Invalid offset')
 class InitiativesCollection(Resource):
 
-    def get(self, **kargs):
+    def get(self):
         """Returns list of initiatives."""
-        return search_initiatives(args)
+        return search_initiatives(request.args)
 
 
 @ns.route('/<id>')
