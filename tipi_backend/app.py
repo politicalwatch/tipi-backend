@@ -2,6 +2,8 @@ import logging.config
 
 import os
 from flask import Flask, Blueprint
+from flask_cors import CORS
+
 from tipi_backend import settings
 from tipi_backend.api.endpoints.topics import ns as topics_namespace
 from tipi_backend.api.endpoints.deputies import ns as deputies_namespace
@@ -38,6 +40,7 @@ def initialize_app(flask_app):
     db.init_app(flask_app)
 
     blueprint = Blueprint('api', __name__, url_prefix='/api')
+    CORS(blueprint)
     api.init_app(blueprint)
     api.add_namespace(topics_namespace)
     api.add_namespace(deputies_namespace)
