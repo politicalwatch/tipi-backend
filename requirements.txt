@@ -5,3 +5,4 @@ marshmallow
 flask-mongoengine
 marshmallow-mongoengine
 webargs
+flask_cors
