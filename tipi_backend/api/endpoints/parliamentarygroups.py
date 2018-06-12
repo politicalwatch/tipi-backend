@@ -5,6 +5,7 @@ from flask_restplus import Resource
 from mongoengine.queryset import DoesNotExist
 from tipi_backend.api.restplus import api
 from tipi_backend.api.business import get_parliamentarygroups, get_parliamentarygroup
+from tipi_backend.api.validators import validate_id_as_hash
 
 log = logging.getLogger(__name__)
 
@@ -24,10 +25,7 @@ class ParliamentaryGroupsCollection(Resource):
 @api.response(404, 'Parliamentary group not found.')
 class ParliamentaryGroupItem(Resource):
 
+    @validate_id_as_hash
     def get(self, id):
         """Returns details of a parliamentary group."""
-        try:
-            return get_parliamentarygroup(id)
-        except:
-            raise(DoesNotExist)
-
+        return get_parliamentarygroup(id)
