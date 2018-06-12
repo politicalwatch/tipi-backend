@@ -5,6 +5,7 @@ from flask_restplus import Resource
 from mongoengine.queryset import DoesNotExist
 from tipi_backend.api.restplus import api
 from tipi_backend.api.business import get_topics, get_topic
+from tipi_backend.api.validators import validate_id_as_hash
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class TopicsCollection(Resource):
 @api.response(404, 'Topic not found.')
 class TopicItem(Resource):
 
+    @validate_id_as_hash
     def get(self, id):
         """Returns details of a topic."""
         return get_topic(id)

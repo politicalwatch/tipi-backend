@@ -5,6 +5,7 @@ from flask_restplus import Resource
 from mongoengine.queryset import DoesNotExist
 from tipi_backend.api.restplus import api
 from tipi_backend.api.business import search_initiatives, get_initiative
+from tipi_backend.api.validators import validate_id_as_hash
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ class InitiativesCollection(Resource):
 @api.response(404, 'Initiative not found.')
 class InitiativeItem(Resource):
 
+    @validate_id_as_hash
     def get(self, id):
         """Returns details of an initiative."""
         return get_initiative(id)
