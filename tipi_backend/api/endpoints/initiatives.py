@@ -48,7 +48,4 @@ class InitiativeItem(Resource):
 
     def get(self, id):
         """Returns details of an initiative."""
-        try:
-            return get_initiative(id)
-        except:
-            raise(DoesNotExist)
+        return get_initiative(id)

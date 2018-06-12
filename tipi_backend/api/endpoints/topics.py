@@ -26,7 +26,4 @@ class TopicItem(Resource):
 
     def get(self, id):
         """Returns details of a topic."""
-        try:
-            return get_topic(id)
-        except:
-            raise(DoesNotExist)
+        return get_topic(id)

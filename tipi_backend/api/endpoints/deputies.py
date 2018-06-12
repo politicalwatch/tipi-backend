@@ -21,14 +21,9 @@ class DeputiesCollection(Resource):
 
 @ns.route('/<id>')
 @ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
-@ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
 @api.response(404, 'Deputy not found.')
 class DeputyItem(Resource):
 
     def get(self, id):
         """Returns details of a deputy."""
-        try:
-            return get_deputy(id)
-        except:
-            raise(DoesNotExist)
-
+        return get_deputy(id)

@@ -26,8 +26,4 @@ class ParliamentaryGroupItem(Resource):
 
     def get(self, id):
         """Returns details of a parliamentary group."""
-        try:
-            return get_parliamentarygroup(id)
-        except:
-            raise(DoesNotExist)
-
+        return get_parliamentarygroup(id)
