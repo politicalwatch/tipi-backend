@@ -9,6 +9,7 @@ from tipi_backend.api.endpoints.topics import ns as topics_namespace
 from tipi_backend.api.endpoints.deputies import ns as deputies_namespace
 from tipi_backend.api.endpoints.parliamentarygroups import ns as parliamentarygroups_namespace
 from tipi_backend.api.endpoints.initiatives import ns as initiatives_namespace
+from tipi_backend.api.endpoints.places import ns as places_namespace
 from tipi_backend.api.restplus import api
 from tipi_backend.database import db
 
@@ -46,6 +47,7 @@ def initialize_app(flask_app):
     api.add_namespace(deputies_namespace)
     api.add_namespace(parliamentarygroups_namespace)
     api.add_namespace(initiatives_namespace)
+    api.add_namespace(places_namespace)
     flask_app.register_blueprint(blueprint)
 
 

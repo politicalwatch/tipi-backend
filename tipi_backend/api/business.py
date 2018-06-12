@@ -44,3 +44,9 @@ def search_initiatives(params):
 
 def get_initiative(id):
     return InitiativeExtendedSchema().dump(Initiative.objects.get(id=id))
+
+def get_places():
+    places = Initiative.objects().distinct('place')
+    places.remove('')
+    return sorted(places)
+
