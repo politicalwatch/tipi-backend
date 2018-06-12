@@ -7,6 +7,7 @@ from tipi_backend.database.schemas.parliamentarygroup import ParliamentaryGroupS
 from tipi_backend.database.models.initiative import Initiative
 from tipi_backend.database.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_backend.api.parsers import SearchInitiativeParser
+from tipi_backend.api.utils import get_unique_values
 
 
 """ TOPICS METHODS """
@@ -46,7 +47,4 @@ def get_initiative(id):
     return InitiativeExtendedSchema().dump(Initiative.objects.get(id=id))
 
 def get_places():
-    places = Initiative.objects().distinct('place')
-    places.remove('')
-    return sorted(places)
-
+    return get_unique_values(Initiative, 'place')
