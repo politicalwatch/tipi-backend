@@ -48,3 +48,21 @@ def get_initiative(id):
 
 def get_places():
     return get_unique_values(Initiative, 'place')
+
+def get_initiative_types():
+    # TODO Change by inmutable list of values
+    return get_unique_values(Initiative, 'initiative_type_alt')
+
+def get_initiative_states():
+    return [
+            'Aprobado',
+            'Respondida',
+            'Celebrada',
+            'En tramitación',
+            'Rechazada',
+            'Retirada',
+            'No admitida a trámite',
+            'No debatida',
+            'Convertida en otra',
+            'Acumulada en otra',
+            ]
