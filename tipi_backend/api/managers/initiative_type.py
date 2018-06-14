@@ -20,3 +20,9 @@ class InitiativeTypeManager():
 
     def get_values(self):
         return list(self.types.keys())
+
+    def get_search_for(self, type):
+        try:
+            return {'initiative_type': {'$in': self.types[type]}}
+        except:
+            return {}

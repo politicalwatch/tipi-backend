@@ -1,5 +1,8 @@
 from webargs import fields
 
+from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
+
+
 detail_args = {
         'id': fields.String(required=True,location='view_args')
         }
@@ -25,6 +28,14 @@ class SearchInitiativeParser:
         self._params = params.to_dict()
         self._limit = self._return_attr_in_params(attrname='limit', type=int, default=20, clean=True)
         self._offset = self._return_attr_in_params(attrname='offset', type=int, default=0, clean=True)
+        self._parse_params(self._params)
+
+    def _parse_params(self, params):
+        temp_params = params.copy()
+        for key, value in temp_params.items():
+            if key == 'type':
+                del params[key]
+                params.update(InitiativeTypeManager().get_search_for(value))
 
     def _return_attr_in_params(self, attrname='', type=str, default='', clean=False):
         if attrname in self._params:
