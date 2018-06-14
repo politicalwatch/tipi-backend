@@ -18,7 +18,7 @@ ns = api.namespace('initiatives', description='Operations related to initiatives
 @ns.route('/')
 # Initiative parameters
 @ns.param(name='topic', description='Topic', type=str, default='', location=['query'], help='Invalid topic')
-@ns.param(name='tags', description='Tags', type=str, default='', location=['query'], help='Invalid tags')
+@ns.param(name='tag', description='Tags', type=str, default='', location=['query'], help='Invalid tags')
 @ns.param(name='author', description='Author', type=str, default='', location=['query'], help='Invalid author')
 # TODO: Poner las fechas como datetime (adaptar la funcion fecha)
 # def email(email_str):

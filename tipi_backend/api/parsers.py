@@ -45,9 +45,14 @@ class SearchInitiativeParser:
         def get_search_for(key, value):
             return {'topics': value}
 
+    class TagParser():
+        @staticmethod
+        def get_search_for(key, value):
+            return {'tags': {'$elemMatch': {'tag': value}}}
+
     parser_by_params = {
             'topic': TopicParser,
-            'tags': DefaultParser,
+            'tags': TagParser,
             'author': DefaultParser,
             'startdate': DefaultParser,
             'enddate': DefaultParser,
