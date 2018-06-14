@@ -40,8 +40,13 @@ class SearchInitiativeParser:
         def get_search_for(key, value):
             return InitiativeTypeManager().get_search_for(value)
 
+    class TopicParser():
+        @staticmethod
+        def get_search_for(key, value):
+            return {'topics': value}
+
     parser_by_params = {
-            'topic': DefaultParser,
+            'topic': TopicParser,
             'tags': DefaultParser,
             'author': DefaultParser,
             'startdate': DefaultParser,
