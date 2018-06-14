@@ -1,3 +1,4 @@
+import re
 from webargs import fields
 
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
@@ -24,6 +25,34 @@ search_initiatives_args = {
 
 class SearchInitiativeParser:
 
+    class DefaultParser():
+        @staticmethod
+        def get_search_for(key, value):
+            return {key: value}
+
+    class TitleParser():
+        @staticmethod
+        def get_search_for(key, value):
+            return {key: {'$regex': value, '$options': 'gi'}}
+
+    class TypeParser():
+        @staticmethod
+        def get_search_for(key, value):
+            return InitiativeTypeManager().get_search_for(value)
+
+    parser_by_params = {
+            'topic': DefaultParser,
+            'tags': DefaultParser,
+            'author': DefaultParser,
+            'startdate': DefaultParser,
+            'enddate': DefaultParser,
+            'place': DefaultParser,
+            'reference': DefaultParser(),
+            'type': TypeParser(),
+            'state': DefaultParser(),
+            'title': TitleParser(),
+            }
+
     def __init__(self, params):
         self._params = params.to_dict()
         self._limit = self._return_attr_in_params(attrname='limit', type=int, default=20, clean=True)
@@ -33,9 +62,8 @@ class SearchInitiativeParser:
     def _parse_params(self, params):
         temp_params = params.copy()
         for key, value in temp_params.items():
-            if key == 'type':
-                del params[key]
-                params.update(InitiativeTypeManager().get_search_for(value))
+            del params[key]
+            params.update(self.parser_by_params[key].get_search_for(key, value))
 
     def _return_attr_in_params(self, attrname='', type=str, default='', clean=False):
         if attrname in self._params:
@@ -60,3 +88,5 @@ class SearchInitiativeParser:
     @property
     def params(self):
         return self._params
+
+
