@@ -8,6 +8,8 @@ from tipi_backend.database.models.initiative import Initiative
 from tipi_backend.database.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_backend.api.parsers import SearchInitiativeParser
 from tipi_backend.api.utils import get_unique_values
+from tipi_backend.api.managers.initiative_state import InitiativeStateManager
+from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 
 
 """ TOPICS METHODS """
@@ -50,19 +52,7 @@ def get_places():
     return get_unique_values(Initiative, 'place')
 
 def get_initiative_types():
-    # TODO Change by inmutable list of values
-    return get_unique_values(Initiative, 'initiative_type_alt')
+    return InitiativeTypeManager().get_values()
 
 def get_initiative_states():
-    return [
-            'Aprobado',
-            'Respondida',
-            'Celebrada',
-            'En tramitación',
-            'Rechazada',
-            'Retirada',
-            'No admitida a trámite',
-            'No debatida',
-            'Convertida en otra',
-            'Acumulada en otra',
-            ]
+    return InitiativeStateManager().get_values()
