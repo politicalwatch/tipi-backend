@@ -1,7 +1,9 @@
 import re
+import datetime
 from webargs import fields
 
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
+from tipi_backend.api.validators import validate_date
 
 
 detail_args = {
@@ -25,55 +27,76 @@ search_initiatives_args = {
 
 class SearchInitiativeParser:
 
-    class DefaultParser():
+    class DefaultFieldParser():
         @staticmethod
         def get_search_for(key, value):
             return {key: value}
 
-    class TitleParser():
+    class TitleFieldParser():
         @staticmethod
         def get_search_for(key, value):
             return {key: {'$regex': value, '$options': 'gi'}}
 
-    class TypeParser():
+    class TypeFieldParser():
         @staticmethod
         def get_search_for(key, value):
             return InitiativeTypeManager().get_search_for(value)
 
-    class TopicParser():
+    class TopicFieldParser():
         @staticmethod
         def get_search_for(key, value):
             return {'topics': value}
 
-    class TagParser():
+    class TagFieldParser():
         @staticmethod
         def get_search_for(key, value):
             return {'tags': {'$elemMatch': {'tag': value}}}
 
+    class CombinedDateFieldParser():
+        @staticmethod
+        def get_search_for(key, value):
+            def parse_date(str_date):
+                array_date = str_date.split('-')
+                return datetime.datetime(int(array_date[0]), int(array_date[1]), int(array_date[2]), 0,0,0,0)
+
+            date_interval = value.split('_')
+            STARTDATE = 0
+            ENDDATE = 1
+            if len(date_interval) is 0:
+                return {}
+            date_query = {'updated': {}}
+            if date_interval[STARTDATE] is not '':
+                if validate_date(date_interval[STARTDATE]):
+                    date_query['updated']['$gte'] = parse_date(date_interval[STARTDATE])
+            if date_interval[ENDDATE] is not '':
+                if validate_date(date_interval[ENDDATE]):
+                    date_query['updated']['$lte'] = parse_date(date_interval[ENDDATE])
+            return date_query
+
     parser_by_params = {
-            'topic': TopicParser,
-            'tags': TagParser,
-            'author': DefaultParser,
-            'startdate': DefaultParser,
-            'enddate': DefaultParser,
-            'place': DefaultParser,
-            'reference': DefaultParser(),
-            'type': TypeParser(),
-            'state': DefaultParser(),
-            'title': TitleParser(),
+            'topic': TopicFieldParser,
+            'tags': TagFieldParser,
+            'author': DefaultFieldParser,
+            'date': CombinedDateFieldParser,
+            'place': DefaultFieldParser,
+            'reference': DefaultFieldParser(),
+            'type': TypeFieldParser(),
+            'state': DefaultFieldParser(),
+            'title': TitleFieldParser(),
             }
 
     def __init__(self, params):
         self._params = params.to_dict()
         self._limit = self._return_attr_in_params(attrname='limit', type=int, default=20, clean=True)
         self._offset = self._return_attr_in_params(attrname='offset', type=int, default=0, clean=True)
-        self._parse_params(self._params)
+        self._join_dates_in_params()
+        self._parse_params()
 
-    def _parse_params(self, params):
-        temp_params = params.copy()
+    def _parse_params(self):
+        temp_params = self._params.copy()
         for key, value in temp_params.items():
-            del params[key]
-            params.update(self.parser_by_params[key].get_search_for(key, value))
+            del self._params[key]
+            self._params.update(self.parser_by_params[key].get_search_for(key, value))
 
     def _return_attr_in_params(self, attrname='', type=str, default='', clean=False):
         if attrname in self._params:
@@ -86,6 +109,19 @@ class SearchInitiativeParser:
     def _clean_params_for_attr(self, attrname=''):
         if attrname in self._params:
             self._params.pop(attrname)
+
+    def _join_dates_in_params(self):
+        if not 'startdate' in self._params:
+            self._params['startdate'] = ''
+        if not 'enddate' in self._params:
+            self._params['enddate'] = ''
+        self._params['date'] = "{}_{}".format(
+                self._params['startdate'],
+                self._params['enddate']
+                )
+        self._clean_params_for_attr('startdate')
+        self._clean_params_for_attr('enddate')
+
 
     @property
     def limit(self):

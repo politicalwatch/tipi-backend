@@ -12,3 +12,8 @@ def validate_id_as_hash(get_func):
             raise BadRequest('ID format is invalid')
         return get_func(self, id)
     return wrapper_func
+
+def validate_date(date_str):
+    if re.match(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', date_str) is None:
+        raise BadRequest('Date format is invalid')
+    return date_str

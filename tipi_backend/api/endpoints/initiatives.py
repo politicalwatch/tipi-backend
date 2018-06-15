@@ -16,20 +16,22 @@ ns = api.namespace('initiatives', description='Operations related to initiatives
 
 
 @ns.route('/')
-# Initiative parameters
+# Common parameters
 @ns.param('offset', 'Offset', type=int, default=0, location=['query'], help='Invalid offset')
 @ns.param('limit', 'Limit', type=int, default=20, location=['query'], help='Invalid limit')
+# Initiative parameters
 @ns.param(name='title', description='Title', type=str, default='', location=['query'], help='Invalid title')
 @ns.param(name='state', description='State', type=str, default='', location=['query'], help='Invalid state')
 @ns.param(name='type', description='Type', type=str, default='', location=['query'], help='Invalid type')
 @ns.param(name='reference', description='Reference', type=str, default='', location=['query'], help='Invalid reference')
 @ns.param(name='place', description='Place', type=str, default='', location=['query'], help='Invalid place')
-@ns.param(name='enddate', description='End date', type=str, location=['query'], help='Invalid end date')
-@ns.param(name='startdate', description='Start date', type=str, location=['query'], help='Invalid start date')
+@ns.param(name='enddate', description='End date (yyyy-mm-dd)', type=str, location=['query'], help='Invalid end date')
+@ns.param(name='startdate', description='Start date (yyyy-mm-dd)', type=str, location=['query'], help='Invalid start date')
 @ns.param(name='author', description='Author', type=str, default='', location=['query'], help='Invalid author')
 @ns.param(name='tag', description='Tags', type=str, default='', location=['query'], help='Invalid tags')
 @ns.param(name='topic', description='Topic', type=str, default='', location=['query'], help='Invalid topic')
-# Common parameters
+#validation functions
+
 class InitiativesCollection(Resource):
 
     def get(self):
