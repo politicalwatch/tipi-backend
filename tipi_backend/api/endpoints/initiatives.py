@@ -17,25 +17,19 @@ ns = api.namespace('initiatives', description='Operations related to initiatives
 
 @ns.route('/')
 # Initiative parameters
-@ns.param(name='topic', description='Topic', type=str, default='', location=['query'], help='Invalid topic')
-@ns.param(name='tag', description='Tags', type=str, default='', location=['query'], help='Invalid tags')
-@ns.param(name='author', description='Author', type=str, default='', location=['query'], help='Invalid author')
-# TODO: Poner las fechas como datetime (adaptar la funcion fecha)
-# def email(email_str):
-#     if valid_email(email_str):
-#         return email_str
-#     else:
-#         raise ValueError('{} is not a valid email'.format(email_str))
-@ns.param(name='startdate', description='Start date', type=str, location=['query'], help='Invalid start date')
-@ns.param(name='enddate', description='Start date', type=str, location=['query'], help='Invalid end date')
-@ns.param(name='place', description='Place', type=str, default='', location=['query'], help='Invalid place')
-@ns.param(name='reference', description='Reference', type=str, default='', location=['query'], help='Invalid reference')
-@ns.param(name='type', description='Type', type=str, default='', location=['query'], help='Invalid type')
-@ns.param(name='state', description='State', type=str, default='', location=['query'], help='Invalid state')
-@ns.param(name='title', description='Title', type=str, default='', location=['query'], help='Invalid title')
-# Common parameters
-@ns.param('limit', 'Limit', type=int, default=20, location=['query'], help='Invalid limit')
 @ns.param('offset', 'Offset', type=int, default=0, location=['query'], help='Invalid offset')
+@ns.param('limit', 'Limit', type=int, default=20, location=['query'], help='Invalid limit')
+@ns.param(name='title', description='Title', type=str, default='', location=['query'], help='Invalid title')
+@ns.param(name='state', description='State', type=str, default='', location=['query'], help='Invalid state')
+@ns.param(name='type', description='Type', type=str, default='', location=['query'], help='Invalid type')
+@ns.param(name='reference', description='Reference', type=str, default='', location=['query'], help='Invalid reference')
+@ns.param(name='place', description='Place', type=str, default='', location=['query'], help='Invalid place')
+@ns.param(name='enddate', description='End date', type=str, location=['query'], help='Invalid end date')
+@ns.param(name='startdate', description='Start date', type=str, location=['query'], help='Invalid start date')
+@ns.param(name='author', description='Author', type=str, default='', location=['query'], help='Invalid author')
+@ns.param(name='tag', description='Tags', type=str, default='', location=['query'], help='Invalid tags')
+@ns.param(name='topic', description='Topic', type=str, default='', location=['query'], help='Invalid topic')
+# Common parameters
 class InitiativesCollection(Resource):
 
     def get(self):
