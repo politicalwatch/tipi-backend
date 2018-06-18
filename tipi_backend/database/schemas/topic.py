@@ -10,6 +10,7 @@ class TagsField(ma.fields.Field):
 class TopicSchema(ma.ModelSchema):
     class Meta:
         model = Topic
+        model_skip_values = [None]
         model_fields_kwargs = {
                 'tags': {'load_only': True}
                 }
@@ -18,4 +19,5 @@ class TopicSchema(ma.ModelSchema):
 class TopicExtendedSchema(ma.ModelSchema):
     class Meta:
         model = Topic
+        model_skip_values = [None]
     tags = TagsField(attribute="tags")

@@ -5,6 +5,7 @@ from tipi_backend.database.models.parliamentarygroup import ParliamentaryGroup
 class ParliamentaryGroupSchema(ma.ModelSchema):
     class Meta:
         model = ParliamentaryGroup
+        model_skip_values = [None]
         model_fields_kwargs = {
                 'active': {'load_only': True}
                 }

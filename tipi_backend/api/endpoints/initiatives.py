@@ -27,7 +27,8 @@ ns = api.namespace('initiatives', description='Operations related to initiatives
 @ns.param(name='place', description='Place', type=str, default='', location=['query'], help='Invalid place')
 @ns.param(name='enddate', description='End date (yyyy-mm-dd)', type=str, location=['query'], help='Invalid end date')
 @ns.param(name='startdate', description='Start date (yyyy-mm-dd)', type=str, location=['query'], help='Invalid start date')
-@ns.param(name='author', description='Author', type=str, default='', location=['query'], help='Invalid author')
+@ns.param(name='deputy', description='Deputy', type=str, default='', location=['query'], help='Invalid deputy')
+@ns.param(name='author', description='Author ("Gobierno" or some of the parliamentary groups)', type=str, default='', location=['query'], help='Invalid author')
 @ns.param(name='tag', description='Tags', type=str, default='', location=['query'], help='Invalid tags')
 @ns.param(name='topic', description='Topic', type=str, default='', location=['query'], help='Invalid topic')
 #validation functions

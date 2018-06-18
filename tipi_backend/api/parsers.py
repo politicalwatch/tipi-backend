@@ -2,6 +2,7 @@ import re
 import datetime
 from webargs import fields
 
+from tipi_backend.database.models.parliamentarygroup import ParliamentaryGroup
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 from tipi_backend.api.validators import validate_date
 
@@ -9,20 +10,6 @@ from tipi_backend.api.validators import validate_date
 detail_args = {
         'id': fields.String(required=True,location='view_args')
         }
-
-search_initiatives_args = {
-        'topic': fields.String(missing=""),
-        'tags': fields.List(fields.Str(), missing=list),
-        'author': fields.String(missing=""),
-        'startdate': fields.Date(missing=None),
-        'enddate': fields.Date(missing=None),
-        'place': fields.String(missing=""),
-        'reference': fields.String(missing=""),
-        'type': fields.String(missing=""),
-        'state': fields.String(missing=""),
-        'title': fields.String(missing=""),
-        }
-
 
 
 class SearchInitiativeParser:
@@ -52,6 +39,18 @@ class SearchInitiativeParser:
         def get_search_for(key, value):
             return {'tags': {'$elemMatch': {'tag': value}}}
 
+    class AuthorFieldParser():
+        @staticmethod
+        def get_search_for(key, value):
+            if not ParliamentaryGroup.objects(name=value):
+                return {'author_others': value}
+            return {'author_parliamentarygroups': value}
+
+    class DeputyFieldParser():
+        @staticmethod
+        def get_search_for(key, value):
+            return {'author_deputies': value}
+
     class CombinedDateFieldParser():
         @staticmethod
         def get_search_for(key, value):
@@ -62,7 +61,7 @@ class SearchInitiativeParser:
             date_interval = value.split('_')
             STARTDATE = 0
             ENDDATE = 1
-            if len(date_interval) is 0:
+            if date_interval[STARTDATE] is '' and date_interval[ENDDATE] is '':
                 return {}
             date_query = {'updated': {}}
             if date_interval[STARTDATE] is not '':
@@ -76,7 +75,8 @@ class SearchInitiativeParser:
     parser_by_params = {
             'topic': TopicFieldParser,
             'tags': TagFieldParser,
-            'author': DefaultFieldParser,
+            'author': AuthorFieldParser,
+            'deputy': DeputyFieldParser,
             'date': CombinedDateFieldParser,
             'place': DefaultFieldParser,
             'reference': DefaultFieldParser(),
