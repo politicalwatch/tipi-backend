@@ -43,7 +43,7 @@ def get_parliamentarygroup(id):
 
 def search_initiatives(params):
     parser = SearchInitiativeParser(params)
-    return InitiativeSchema(many=True).dump(Initiative.objects(__raw__=parser.params)[parser.offset:(parser.offset+parser.limit)])
+    return Initiative.objects(__raw__=parser.params).count(), parser.offset, parser.limit, InitiativeSchema(many=True).dump(Initiative.objects(__raw__=parser.params).limit(parser.limit).skip(parser.offset))
 
 def get_initiative(id):
     return InitiativeExtendedSchema().dump(Initiative.objects.get(id=id))

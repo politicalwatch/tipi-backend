@@ -1,4 +1,5 @@
 import logging
+import json
 
 from flask import request
 from flask_restplus import Resource
@@ -37,7 +38,15 @@ class InitiativesCollection(Resource):
 
     def get(self):
         """Returns list of initiatives."""
-        return search_initiatives(request.args)
+        total, offset, limit, initiatives = search_initiatives(request.args)
+        return {
+                'query_meta': {
+                    'total': total,
+                    'offset': offset,
+                    'limit': limit
+                    },
+                'initiatives': initiatives.data
+                }
 
 
 @ns.route('/<id>')
