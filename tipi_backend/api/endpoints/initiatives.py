@@ -21,7 +21,7 @@ ns = api.namespace('initiatives', description='Operations related to initiatives
 @ns.param('limit', 'Limit', type=int, default=20, location=['query'], help='Invalid limit')
 # Initiative parameters
 @ns.param(name='title', description='Title', type=str, default='', location=['query'], help='Invalid title')
-@ns.param(name='state', description='State', type=str, default='', location=['query'], help='Invalid state')
+@ns.param(name='status', description='Status', type=str, default='', location=['query'], help='Invalid status')
 @ns.param(name='type', description='Type', type=str, default='', location=['query'], help='Invalid type')
 @ns.param(name='reference', description='Reference', type=str, default='', location=['query'], help='Invalid reference')
 @ns.param(name='place', description='Place', type=str, default='', location=['query'], help='Invalid place')

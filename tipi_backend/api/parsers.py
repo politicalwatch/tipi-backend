@@ -81,7 +81,7 @@ class SearchInitiativeParser:
             'place': DefaultFieldParser,
             'reference': DefaultFieldParser(),
             'type': TypeFieldParser(),
-            'state': DefaultFieldParser(),
+            'status': DefaultFieldParser(),
             'title': TitleFieldParser(),
             }
 

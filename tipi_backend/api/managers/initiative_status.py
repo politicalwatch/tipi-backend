@@ -1,7 +1,7 @@
-class InitiativeStateManager():
+class InitiativeStatusManager():
 
     def __init__(self):
-        self.states = [
+        self.all_status = [
                 'Aprobada',
                 'Respondida',
                 'Celebrada',
@@ -15,4 +15,4 @@ class InitiativeStateManager():
                 ]
 
     def get_values(self):
-        return self.states
+        return self.all_status

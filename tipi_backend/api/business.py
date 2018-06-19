@@ -8,7 +8,7 @@ from tipi_backend.database.models.initiative import Initiative
 from tipi_backend.database.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_backend.api.parsers import SearchInitiativeParser
 from tipi_backend.api.utils import get_unique_values
-from tipi_backend.api.managers.initiative_state import InitiativeStateManager
+from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 
 
@@ -54,5 +54,5 @@ def get_places():
 def get_initiative_types():
     return InitiativeTypeManager().get_values()
 
-def get_initiative_states():
-    return InitiativeStateManager().get_values()
+def get_initiative_status():
+    return InitiativeStatusManager().get_values()
