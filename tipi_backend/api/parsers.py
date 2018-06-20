@@ -72,7 +72,7 @@ class SearchInitiativeParser:
                     date_query['updated']['$lte'] = parse_date(date_interval[ENDDATE])
             return date_query
 
-    parser_by_params = {
+    PARSER_BY_PARAMS = {
             'topic': TopicFieldParser,
             'tags': TagFieldParser,
             'author': AuthorFieldParser,
@@ -85,18 +85,26 @@ class SearchInitiativeParser:
             'title': TitleFieldParser(),
             }
 
+    EMPTY_VALUES = ['', None, []]
+
     def __init__(self, params):
         self._params = params.to_dict()
+        self._clean_params()
         self._limit = self._return_attr_in_params(attrname='limit', type=int, default=20, clean=True)
         self._offset = self._return_attr_in_params(attrname='offset', type=int, default=0, clean=True)
         self._join_dates_in_params()
         self._parse_params()
 
+    def _clean_params(self):
+        for key, value in self._params.copy().items():
+            if value in self.EMPTY_VALUES:
+                self._clean_params_for_attr(key)
+
     def _parse_params(self):
         temp_params = self._params.copy()
         for key, value in temp_params.items():
             del self._params[key]
-            self._params.update(self.parser_by_params[key].get_search_for(key, value))
+            self._params.update(self.PARSER_BY_PARAMS[key].get_search_for(key, value))
 
     def _return_attr_in_params(self, attrname='', type=str, default='', clean=False):
         if attrname in self._params:
@@ -108,7 +116,7 @@ class SearchInitiativeParser:
 
     def _clean_params_for_attr(self, attrname=''):
         if attrname in self._params:
-            self._params.pop(attrname)
+            del self._params[attrname]
 
     def _join_dates_in_params(self):
         if not 'startdate' in self._params:
