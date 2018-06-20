@@ -34,5 +34,12 @@ class InitiativeSchema(ma.ModelSchema):
 
 
 class InitiativeExtendedSchema(ma.ModelSchema):
+    authors = AuthorsField(attribute='author_parliamentarygroups')
+    deputies = DeputiesField(attribute='author_deputies')
     class Meta:
         model = Initiative
+        model_fields_kwargs = {
+                'author_deputies': {'load_only': True},
+                'author_parliamentarygroups': {'load_only': True},
+                'author_others': {'load_only': True},
+                }
