@@ -141,7 +141,6 @@ class SearchInitiativeParser:
 
     @property
     def params(self):
-        print(self._params)
         return self._params
 
 
