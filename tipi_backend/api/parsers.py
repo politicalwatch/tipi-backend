@@ -74,7 +74,7 @@ class SearchInitiativeParser:
 
     PARSER_BY_PARAMS = {
             'topic': TopicFieldParser,
-            'tags': TagFieldParser,
+            'tag': TagFieldParser,
             'author': AuthorFieldParser,
             'deputy': DeputyFieldParser,
             'date': CombinedDateFieldParser,
@@ -141,6 +141,7 @@ class SearchInitiativeParser:
 
     @property
     def params(self):
+        print(self._params)
         return self._params
 
 
