@@ -42,7 +42,7 @@ def initialize_app(flask_app):
 
     db.init_app(flask_app)
 
-    blueprint = Blueprint('api', __name__, url_prefix='/api')
+    blueprint = Blueprint('api', __name__)
     CORS(blueprint)
     api.init_app(blueprint)
     api.add_namespace(topics_namespace)
