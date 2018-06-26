@@ -9,7 +9,7 @@ from tipi_backend.api.validators import validate_id_as_hash
 
 log = logging.getLogger(__name__)
 
-ns = api.namespace('parliamentarygroups', description='Operations related to parliamentary groups')
+ns = api.namespace('parliamentary-groups', description='Operations related to parliamentary groups')
 
 
 @ns.route('/')
