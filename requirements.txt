@@ -1,8 +1,6 @@
 Flask
 flask-restplus
-git+https://github.com/simeon-xx/flask-restplus-patched.git
 marshmallow
 flask-mongoengine
 marshmallow-mongoengine
-webargs
 flask_cors

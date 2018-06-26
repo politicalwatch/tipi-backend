@@ -12,7 +12,6 @@ setup(
         'flask-restplus',
         'marshmallow',
         'flask-mongoengine',
-        'marshmallow-mongoengine',
-        'webargs'
+        'marshmallow-mongoengine'
     ],
 )
