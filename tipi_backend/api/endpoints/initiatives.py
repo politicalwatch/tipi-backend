@@ -23,7 +23,8 @@ class InitiativesCollection(Resource):
 
     def get(self):
         """Returns list of initiatives."""
-        total, pages, page, per_page, initiatives = search_initiatives(request.args)
+        args = parser_initiative.parse_args(request)
+        total, pages, page, per_page, initiatives = search_initiatives(args)
         return {
                 'query_meta': {
                     'total': total,

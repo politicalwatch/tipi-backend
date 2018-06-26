@@ -51,7 +51,7 @@ class SearchInitiativeParser:
     class SubtopicFieldParser():
         @staticmethod
         def get_search_for(key, value):
-            return {'tags': {'$elemMatch': {'subtopic': value}}}
+            return {'tags': {'$elemMatch': {'subtopic': {'$in': value}}}}
 
     class AuthorFieldParser():
         @staticmethod
@@ -102,7 +102,8 @@ class SearchInitiativeParser:
     EMPTY_VALUES = ['', None, []]
 
     def __init__(self, params):
-        self._params = params.to_dict()
+        # self._params = params.to_dict()
+        self._params = params
         self._clean_params()
         self._per_page = self._return_attr_in_params(attrname='per_page', type=int, default=20, clean=True)
         self._page = self._return_attr_in_params(attrname='page', type=int, default=1, clean=True)
