@@ -21,7 +21,7 @@ parser_initiative.add_argument('enddate', type=str, location='args', help='Date 
 parser_initiative.add_argument('startdate', type=str, location='args', help='Date format must be yyyy-mm-dd')
 parser_initiative.add_argument('deputy', type=str, location='args', help='To get the values, check out /deputies')
 parser_initiative.add_argument('author', type=str, location='args', help='To get the values, check out /parliamentary-groups')
-parser_initiative.add_argument('subtopics', type=str, action='split', location='args', help='To get the values, check out /topics/id')
+parser_initiative.add_argument('subtopics', type=str, action='append', location='args', help='To get the values, check out /topics/id')
 parser_initiative.add_argument('topic', type=str, location='args', help='To get the values, check out /topics')
 
 
@@ -102,7 +102,6 @@ class SearchInitiativeParser:
     EMPTY_VALUES = ['', None, []]
 
     def __init__(self, params):
-        # self._params = params.to_dict()
         self._params = params
         self._clean_params()
         self._per_page = self._return_attr_in_params(attrname='per_page', type=int, default=20, clean=True)
