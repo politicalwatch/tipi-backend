@@ -35,3 +35,7 @@ class Initiative(db.DynamicDocument):
     @queryset_manager
     def objects(doc_cls, queryset):
         return queryset.filter(topics__not__size=0).order_by('-updated')
+
+    @queryset_manager
+    def all(doc_cls, queryset):
+        return queryset.order_by('-updated')
