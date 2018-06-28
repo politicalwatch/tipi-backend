@@ -20,4 +20,5 @@ class TopicExtendedSchema(ma.ModelSchema):
     class Meta:
         model = Topic
         model_skip_values = [None]
+
     tags = TagsField(attribute="tags")

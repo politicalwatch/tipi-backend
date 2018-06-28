@@ -12,8 +12,6 @@ class DeputiesField(ma.fields.Field):
 
 
 class InitiativeSchema(ma.ModelSchema):
-    authors = AuthorsField(attribute='author_parliamentarygroups')
-    deputies = DeputiesField(attribute='author_deputies')
     class Meta:
         model = Initiative
         model_skip_values = [None]
@@ -32,10 +30,11 @@ class InitiativeSchema(ma.ModelSchema):
                 'tagged': {'load_only': True},
                 }
 
-
-class InitiativeExtendedSchema(ma.ModelSchema):
     authors = AuthorsField(attribute='author_parliamentarygroups')
     deputies = DeputiesField(attribute='author_deputies')
+
+
+class InitiativeExtendedSchema(ma.ModelSchema):
     class Meta:
         model = Initiative
         model_fields_kwargs = {
@@ -43,3 +42,6 @@ class InitiativeExtendedSchema(ma.ModelSchema):
                 'author_parliamentarygroups': {'load_only': True},
                 'author_others': {'load_only': True},
                 }
+
+    authors = AuthorsField(attribute='author_parliamentarygroups')
+    deputies = DeputiesField(attribute='author_deputies')
