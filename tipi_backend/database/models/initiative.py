@@ -38,4 +38,4 @@ class Initiative(db.DynamicDocument):
 
     @queryset_manager
     def all(doc_cls, queryset):
-        return queryset.order_by('-updated')
+        return queryset
