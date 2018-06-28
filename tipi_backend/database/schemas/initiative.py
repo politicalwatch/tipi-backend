@@ -21,8 +21,6 @@ class InitiativeSchema(ma.ModelSchema):
                 'author_others': {'load_only': True},
                 'created': {'load_only': True},
                 'reference': {'load_only': True},
-                'initiative_type': {'load_only': True},
-                'initiative_type_alt': {'load_only': True},
                 'place': {'load_only': True},
                 'processing': {'load_only': True},
                 'url': {'load_only': True},
