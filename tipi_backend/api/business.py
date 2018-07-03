@@ -68,20 +68,26 @@ def get_initiative_status():
 def get_overall_stats():
     return json.loads(Stats.objects()[0].to_json())['overall']
 
-def _get_authors_stats(stats, key, value, returnkey):
-    deputies_stats = [x for x in stats[key] if x['_id'] == value]
-    if len(deputies_stats) == 0:
+def _get_subdoc_stats(stats, key, value, returnkey):
+    subdoc_stats = [x for x in stats[key] if x['_id'] == value]
+    if len(subdoc_stats) == 0:
         return {}
-    return deputies_stats[0]
+    return subdoc_stats[0][returnkey]
 
 def get_deputies_stats(params):
     stats = json.loads(Stats.objects()[0].to_json())
     if params['subtopic'] is not None:
-        return _get_authors_stats(stats, 'deputiesBySubtopics', params['subtopic'], 'deputies')
-    return _get_authors_stats(stats, 'deputiesByTopics', params['topic'], 'deputies')
+        return _get_subdoc_stats(stats, 'deputiesBySubtopics', params['subtopic'], 'deputies')
+    return _get_subdoc_stats(stats, 'deputiesByTopics', params['topic'], 'deputies')
 
 def get_parliamentarygroups_stats(params):
     stats = json.loads(Stats.objects()[0].to_json())
     if params['subtopic'] is not None:
-        return _get_authors_stats(stats, 'parliamentarygroupsBySubtopics', params['subtopic'], 'parliamentarygroups')
-    return _get_authors_stats(stats, 'parliamentarygroupsByTopics', params['topic'], 'parliamentarygroups')
+        return _get_subdoc_stats(stats, 'parliamentarygroupsBySubtopics', params['subtopic'], 'parliamentarygroups')
+    return _get_subdoc_stats(stats, 'parliamentarygroupsByTopics', params['topic'], 'parliamentarygroups')
+
+def get_places_stats(params):
+    stats = json.loads(Stats.objects()[0].to_json())
+    if params['subtopic'] is not None:
+        return _get_subdoc_stats(stats, 'placesBySubtopics', params['subtopic'], 'places')
+    return _get_subdoc_stats(stats, 'placesByTopics', params['topic'], 'places')

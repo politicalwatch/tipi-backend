@@ -7,7 +7,8 @@ from tipi_backend.api.parsers import parser_stats
 from tipi_backend.api.business import \
         get_overall_stats, \
         get_deputies_stats, \
-        get_parliamentarygroups_stats
+        get_parliamentarygroups_stats, \
+        get_places_stats
 
 
 log = logging.getLogger(__name__)
@@ -40,3 +41,12 @@ class ParliamentaryGroupsStats(Resource):
         """Returns ranking of parliamentary groups by topics (and/or subtopics)."""
         args = parser_stats.parse_args(request)
         return get_parliamentarygroups_stats(args)
+
+@ns.route('/places')
+@ns.expect(parser_stats)
+class PlacesStats(Resource):
+
+    def get(self):
+        """Returns top five places by topics (and/or subtopics)."""
+        args = parser_stats.parse_args(request)
+        return get_places_stats(args)
