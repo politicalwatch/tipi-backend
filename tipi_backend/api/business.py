@@ -9,7 +9,7 @@ from tipi_backend.database.schemas.parliamentarygroup import ParliamentaryGroupS
 from tipi_backend.database.models.initiative import Initiative
 from tipi_backend.database.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_backend.api.parsers import SearchInitiativeParser
-from tipi_backend.api.utils import get_unique_values
+from tipi_backend.api.managers.initiative_places import InitiativePlaceManager
 from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 from tipi_backend.database.models.stats import Stats
@@ -54,7 +54,7 @@ def get_initiative(id):
     return InitiativeExtendedSchema().dump(Initiative.objects.get(id=id))
 
 def get_places():
-    return get_unique_values(Initiative, 'place')
+    return InitiativePlaceManager().get_values()
 
 def get_initiative_types():
     return InitiativeTypeManager().get_values()
