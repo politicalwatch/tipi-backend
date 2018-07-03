@@ -1,3 +1,5 @@
+import json
+
 from tipi_backend.database.models.topic import Topic
 from tipi_backend.database.schemas.topic import TopicSchema, TopicExtendedSchema
 from tipi_backend.database.models.deputy import Deputy
@@ -10,6 +12,7 @@ from tipi_backend.api.parsers import SearchInitiativeParser
 from tipi_backend.api.utils import get_unique_values
 from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
+from tipi_backend.database.models.stats import Stats
 
 
 """ TOPICS METHODS """
@@ -58,3 +61,27 @@ def get_initiative_types():
 
 def get_initiative_status():
     return InitiativeStatusManager().get_values()
+
+
+""" STATS METHODS """
+
+def get_overall_stats():
+    return json.loads(Stats.objects()[0].to_json())['overall']
+
+def _get_authors_stats(stats, key, value, returnkey):
+    deputies_stats = [x for x in stats[key] if x['_id'] == value]
+    if len(deputies_stats) == 0:
+        return {}
+    return deputies_stats[0]
+
+def get_deputies_stats(params):
+    stats = json.loads(Stats.objects()[0].to_json())
+    if params['subtopic'] is not None:
+        return _get_authors_stats(stats, 'deputiesBySubtopics', params['subtopic'], 'deputies')
+    return _get_authors_stats(stats, 'deputiesByTopics', params['topic'], 'deputies')
+
+def get_parliamentarygroups_stats(params):
+    stats = json.loads(Stats.objects()[0].to_json())
+    if params['subtopic'] is not None:
+        return _get_authors_stats(stats, 'parliamentarygroupsBySubtopics', params['subtopic'], 'parliamentarygroups')
+    return _get_authors_stats(stats, 'parliamentarygroupsByTopics', params['topic'], 'parliamentarygroups')

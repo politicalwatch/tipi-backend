@@ -25,6 +25,11 @@ parser_initiative.add_argument('subtopics', type=str, action='append', location=
 parser_initiative.add_argument('topic', type=str, location='args', help='To get the values, check out /topics')
 
 
+parser_stats = reqparse.RequestParser()
+parser_stats.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
+parser_stats.add_argument('subtopic', type=str, location='args', help='To get the values, check out /topics/id')
+
+
 
 class SearchInitiativeParser:
 
