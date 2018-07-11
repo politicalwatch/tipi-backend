@@ -11,9 +11,9 @@ from tipi_backend import settings
 log = logging.getLogger(__name__)
 
 api = Api(
-        title='TIPI API Documentation',
-        description='This document includes all the methods that the TIPI API offers its users.',
-        version='1.0'
+        title='{} API Documentation'.format(settings.NAME),
+        description=settings.DESCRIPTION,
+        version=settings.VERSION
         )
 
 
