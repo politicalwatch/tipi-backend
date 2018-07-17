@@ -29,12 +29,16 @@ class Initiative(db.DynamicDocument):
     tagged = db.BooleanField()
     url = db.URLField()
 
-    meta = {'collection': 'initiatives'}
+    meta = {
+            'collection': 'initiatives',
+            'ordering': ['-updated'],
+            'indexes': ['updated']
+            }
     # TODO Add indexes https://mongoengine-odm.readthedocs.io/guide/defining-documents.html#indexes
 
     @queryset_manager
     def objects(doc_cls, queryset):
-        return queryset.filter(topics__not__size=0).order_by('-updated')
+        return queryset.filter(topics__not__size=0)
 
     @queryset_manager
     def all(doc_cls, queryset):
