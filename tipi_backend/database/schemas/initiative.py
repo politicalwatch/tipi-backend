@@ -4,7 +4,7 @@ from tipi_backend.database.models.initiative import Initiative
 
 class AuthorsField(ma.fields.Field):
     def _serialize(self, value, attr, obj):
-        return obj.author_parliamentarygroups + obj.author_others
+        return obj.author_others + obj.author_parliamentarygroups 
 
 class DeputiesField(ma.fields.Field):
     def _serialize(self, value, attr, obj):
