@@ -9,6 +9,7 @@ from tipi_backend.api.restplus import api
 from tipi_backend.api.parsers import parser_initiative
 from tipi_backend.api.business import search_initiatives, get_initiative
 from tipi_backend.api.validators import validate_id_as_hash
+from tipi_backend.utils import save_search
 
 
 log = logging.getLogger(__name__)
@@ -24,6 +25,8 @@ class InitiativesCollection(Resource):
     def get(self):
         """Returns list of initiatives."""
         args = parser_initiative.parse_args(request)
+        save_search(args, request.environ)
+        # 'args' variable is gonna be adapted for searching after this line
         total, pages, page, per_page, initiatives = search_initiatives(args)
         return {
                 'query_meta': {
