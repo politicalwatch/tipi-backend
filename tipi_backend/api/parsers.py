@@ -21,6 +21,7 @@ parser_initiative.add_argument('enddate', type=str, location='args', help='Date 
 parser_initiative.add_argument('startdate', type=str, location='args', help='Date format must be yyyy-mm-dd')
 parser_initiative.add_argument('deputy', type=str, location='args', help='To get the values, check out /deputies')
 parser_initiative.add_argument('author', type=str, location='args', help='To get the values, check out /parliamentary-groups')
+parser_initiative.add_argument('tags', type=str, action='append', location='args', help='To get the values, check out /topics/id')
 parser_initiative.add_argument('subtopics', type=str, action='append', location='args', help='To get the values, check out /topics/id')
 parser_initiative.add_argument('topic', type=str, location='args', help='To get the values, check out /topics')
 
@@ -53,10 +54,17 @@ class SearchInitiativeParser:
         def get_search_for(key, value):
             return {'topics': value}
 
-    class SubtopicFieldParser():
+    class CombinedTagsFieldParser():
         @staticmethod
         def get_search_for(key, value):
-            return {'tags': {'$elemMatch': {'subtopic': {'$in': value}}}}
+            if not len(value['tags']) and not len(value['subtopics']):
+                return {}
+            elem_match = dict()
+            if len(value['tags']):
+                elem_match.update({ 'tag': {'$in': value['tags']} })
+            if len(value['subtopics']):
+                elem_match.update({ 'subtopic': {'$in': value['subtopics']} })
+            return {'tags': {'$elemMatch': elem_match}}
 
     class AuthorFieldParser():
         @staticmethod
@@ -93,7 +101,7 @@ class SearchInitiativeParser:
 
     PARSER_BY_PARAMS = {
             'topic': TopicFieldParser,
-            'subtopics': SubtopicFieldParser,
+            'tags': CombinedTagsFieldParser,
             'author': AuthorFieldParser,
             'deputy': DeputyFieldParser,
             'date': CombinedDateFieldParser,
@@ -111,6 +119,7 @@ class SearchInitiativeParser:
         self._clean_params()
         self._per_page = self._return_attr_in_params(attrname='per_page', type=int, default=20, clean=True)
         self._page = self._return_attr_in_params(attrname='page', type=int, default=1, clean=True)
+        self._join_tags_and_subtopics_in_params()
         self._join_dates_in_params()
         self._parse_params()
 
@@ -136,6 +145,16 @@ class SearchInitiativeParser:
     def _clean_params_for_attr(self, attrname=''):
         if attrname in self._params:
             del self._params[attrname]
+
+    def _join_tags_and_subtopics_in_params(self):
+        tags = [] if not 'tags' in self._params else self._params['tags']
+        subtopics = [] if not 'subtopics' in self._params else self._params['subtopics']
+        self._clean_params_for_attr('tags')
+        self._clean_params_for_attr('subtopics')
+        self._params['tags'] = {
+                'tags': tags,
+                'subtopics': subtopics
+                }
 
     def _join_dates_in_params(self):
         if not 'startdate' in self._params:
