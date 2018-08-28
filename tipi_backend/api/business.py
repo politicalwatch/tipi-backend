@@ -27,7 +27,7 @@ def get_topic(id):
 """ DEPUTIES METHODS """
 
 def get_deputies():
-    return DeputySchema(many=True).dump(Deputy.objects(active=True))
+    return DeputySchema(many=True).dump(Deputy.objects())
 
 def get_deputy(id):
     return DeputyExtendedSchema().dump(Deputy.objects.get(id=id))

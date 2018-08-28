@@ -10,7 +10,6 @@ class DeputySchema(ma.ModelSchema):
                 'email': {'load_only': True},
                 'web': {'load_only': True},
                 'twitter': {'load_only': True},
-                'active': {'load_only': True},
                 'start_date': {'load_only': True},
                 'end_date': {'load_only': True},
                 'url': {'load_only': True},
