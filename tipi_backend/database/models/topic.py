@@ -11,6 +11,8 @@ class Tag(db.EmbeddedDocument):
 class Topic(db.Document):
     id = db.StringField(db_field='_id', primary_key=True)
     name = db.StringField()
+    description = db.StringField()
+    icon = db.StringField()
     tags = db.EmbeddedDocumentListField(Tag)
 
     meta = {'collection': 'topics'}
