@@ -8,6 +8,7 @@ from tipi_backend.api.business import \
         get_overall_stats, \
         get_deputies_stats, \
         get_parliamentarygroups_stats, \
+        get_latest_initiatives, \
         get_places_stats
 
 
@@ -41,6 +42,15 @@ class ParliamentaryGroupsStats(Resource):
         """Returns ranking of parliamentary groups by topics (and/or subtopics)."""
         args = parser_stats.parse_args(request)
         return get_parliamentarygroups_stats(args)
+
+@ns.route('/latest-initiatives')
+@ns.expect(parser_stats)
+class LatestStats(Resource):
+
+    def get(self):
+        """Returns latest initiatives by topics."""
+        args = parser_stats.parse_args(request)
+        return get_latest_initiatives(args)
 
 @ns.route('/places')
 @ns.expect(parser_stats)

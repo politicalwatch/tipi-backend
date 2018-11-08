@@ -88,6 +88,10 @@ def get_parliamentarygroups_stats(params):
         return _get_subdoc_stats(stats, 'parliamentarygroupsBySubtopics', params['subtopic'], 'parliamentarygroups')
     return _get_subdoc_stats(stats, 'parliamentarygroupsByTopics', params['topic'], 'parliamentarygroups')
 
+def get_latest_initiatives(params):
+    stats = json.loads(Stats.objects()[0].to_json())
+    return _get_subdoc_stats(stats, 'latest', params['topic'], 'initiatives')
+
 def get_places_stats(params):
     stats = json.loads(Stats.objects()[0].to_json())
     if params['subtopic'] is not None:
