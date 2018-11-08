@@ -38,7 +38,7 @@ class Initiative(db.DynamicDocument):
 
     @queryset_manager
     def objects(doc_cls, queryset):
-        return queryset.filter(topics__not__size=0)
+        return queryset.filter(topics__exists=True, topics__not__size=0)
 
     @queryset_manager
     def all(doc_cls, queryset):
