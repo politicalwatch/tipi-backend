@@ -12,6 +12,7 @@ class TopicSchema(ma.ModelSchema):
         model = Topic
         model_skip_values = [None]
         model_fields_kwargs = {
+                'description': {'load_only': True},
                 'tags': {'load_only': True}
                 }
 
