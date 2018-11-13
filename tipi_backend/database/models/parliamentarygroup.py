@@ -7,4 +7,8 @@ class ParliamentaryGroup(db.Document):
     shortname = db.StringField()
     active = db.BooleanField()
 
-    meta = {'collection': 'parliamentarygroups'}
+    meta = {
+            'collection': 'parliamentarygroups',
+            'ordering': ['name'],
+            'indexes': ['name']
+            }

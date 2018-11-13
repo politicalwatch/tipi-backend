@@ -14,5 +14,9 @@ class Deputy(db.Document):
     url = db.URLField()
     active = db.BooleanField()
 
-    meta = {'collection': 'deputies'}
+    meta = {
+            'collection': 'deputies',
+            'ordering': ['name'],
+            'indexes': ['name']
+            }
     # TODO Add indexes https://mongoengine-odm.readthedocs.io/guide/defining-documents.html#indexes
