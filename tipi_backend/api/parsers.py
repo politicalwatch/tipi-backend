@@ -31,6 +31,9 @@ parser_stats.add_argument('topic', type=str, required=True, location='args', hel
 parser_stats.add_argument('subtopic', type=str, location='args', help='To get the values, check out /topics/id')
 
 
+parser_authors = reqparse.RequestParser()
+parser_authors.add_argument('name', type=str, location='args', help='Send a name')
+
 
 class SearchInitiativeParser:
 

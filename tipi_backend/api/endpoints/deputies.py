@@ -4,6 +4,7 @@ from flask import request
 from flask_restplus import Resource
 from mongoengine.queryset import DoesNotExist
 from tipi_backend.api.restplus import api
+from tipi_backend.api.parsers import parser_authors
 from tipi_backend.api.business import get_deputies, get_deputy
 from tipi_backend.api.validators import validate_id_as_hash
 
@@ -13,11 +14,13 @@ ns = api.namespace('deputies', description='Operations related to deputies')
 
 
 @ns.route('/')
+@ns.expect(parser_authors)
 class DeputiesCollection(Resource):
 
     def get(self):
         """Returns list of active deputies."""
-        return get_deputies()
+        args = parser_authors.parse_args(request)
+        return get_deputies(args)
 
 
 @ns.route('/<id>')

@@ -26,8 +26,10 @@ def get_topic(id):
 
 """ DEPUTIES METHODS """
 
-def get_deputies():
-    return DeputySchema(many=True).dump(Deputy.objects())
+def get_deputies(params):
+    if params['name'] is None:
+        del(params['name'])
+    return DeputySchema(many=True).dump(Deputy.objects(__raw__=params))
 
 def get_deputy(id):
     return DeputyExtendedSchema().dump(Deputy.objects.get(id=id))
@@ -35,8 +37,10 @@ def get_deputy(id):
 
 """ PARLIAMENTARY GROUPS METHODS """
 
-def get_parliamentarygroups():
-    return ParliamentaryGroupSchema(many=True).dump(ParliamentaryGroup.objects(active=True))
+def get_parliamentarygroups(params):
+    if params['name'] is None:
+        del(params['name'])
+    return ParliamentaryGroupSchema(many=True).dump(ParliamentaryGroup.objects(__raw__=params))
 
 def get_parliamentarygroup(id):
     return ParliamentaryGroupSchema().dump(ParliamentaryGroup.objects.get(id=id))
