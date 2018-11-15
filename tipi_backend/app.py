@@ -2,6 +2,7 @@ import logging.config
 
 import os
 from flask import Flask, Blueprint
+from werkzeug.contrib.fixers import ProxyFix
 from flask_cors import CORS
 
 from tipi_backend import settings
@@ -18,6 +19,8 @@ from tipi_backend.database import db
 
 
 app = Flask(__name__)
+if settings.USE_PROXY:
+    app.wsgi_app = ProxyFix(app.wsgi_app)
 logging_conf_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '../logging.conf'))
 logging.config.fileConfig(logging_conf_path)
 log = logging.getLogger(__name__)
