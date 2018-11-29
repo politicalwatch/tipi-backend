@@ -29,7 +29,7 @@ class InitiativePlaceManager():
                 'Comisión de Peticiones',
                 'Comisión de Seguimiento y Evaluación de los Acuerdos Pacto de Toledo',
                 'Comisión sobre Seguridad Vial y Movilidad Sostenible',
-                'Comisión de Derechos de la Infancia y la Adolescencia',
+                'Comisión de Derechos de la Infancia y Adolescencia',
                 'Comisión calidad democrática, contra corrupción y reform. inst. y legales',
                 'Comisión de segto. y eval. acuerdos Pacto de Estado Violencia Género',
                 'Comisión de Economía y Competitividad',
