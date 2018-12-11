@@ -10,9 +10,12 @@ log = logging.getLogger(__name__)
 ns = api.namespace('labels', description='Operations related to label extraction')
 
 
-@ns.route('/')
+@ns.route('/extract')
+@ns.param(name='text', description='Text to be parsed for tags', type=str, required=True, location='form', help='Invalid identifier')
 class LabelsExtractor(Resource):
-    def get(self):
-        """Returns list of active deputies."""
-        example = "¿Considera aceptable el Gobierno recortar las prestaciones por desempleo cuando la economía está creciendo"
-        return extract_labels_from_text(example, get_tags())
+    def post(self):
+        """Returns a dictionary of topics and tags matching the text."""
+        return extract_labels_from_text(
+            request.form['text'],
+            get_tags()
+        )

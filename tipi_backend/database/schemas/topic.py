@@ -4,7 +4,7 @@ from tipi_backend.database.models.topic import Topic
 
 class TagsField(ma.fields.Field):
     def _serialize(self, value, attr, obj):
-        return [{'subtopic': v['subtopic'], 'tag': v['tag'], 'regex': v['regex']} for v in value]
+        return [{'subtopic': v['subtopic'], 'tag': v['tag']} for v in value]
 
 
 class TopicSchema(ma.ModelSchema):
