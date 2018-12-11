@@ -4,3 +4,4 @@ marshmallow
 flask-mongoengine
 marshmallow-mongoengine
 flask_cors
+git+https://github.com/politicalwatch/tipi-alerts.git
