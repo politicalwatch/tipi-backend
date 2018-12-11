@@ -1,4 +1,7 @@
+from werkzeug.contrib.cache import SimpleCache
+
 import json
+import pcre
 
 from tipi_backend.database.models.topic import Topic
 from tipi_backend.database.schemas.topic import TopicSchema, TopicExtendedSchema
@@ -101,3 +104,42 @@ def get_places_stats(params):
     if params['subtopic'] is not None:
         return _get_subdoc_stats(stats, 'placesBySubtopics', params['subtopic'], 'places')
     return _get_subdoc_stats(stats, 'placesByTopics', params['topic'], 'places')
+
+
+""" LABELS EXTRACTOR METHODS """
+cache = SimpleCache()
+def get_tags():
+    cache_key = 'tags-for-labeling'
+    cached_tags = cache.get(cache_key)
+    if cached_tags is not None:
+        return cached_tags
+
+    topics = TopicExtendedSchema(many=True).dump(Topic.objects())
+    tags = []
+    for topic in topics[0]:
+        for tag in topic['tags']:
+            tags.append({
+                'topic': topic['name'],
+                'compiletag': pcre.compile('(?i)' + tag['regex']),
+                'tag': tag['tag'],
+                'subtopic': tag['subtopic']
+            })
+    cache.set(cache_key, tags, timeout=5*60)
+    return tags
+
+
+def extract_labels_from_text():
+    #test_initiative = get_initiative('3b4a1dedbd3df050bd21912fc8d55350414a5a65')
+    example = "¿Considera aceptable el Gobierno recortar las prestaciones por desempleo cuando la economía está creciendo"
+    content = example
+
+    tags = get_tags()
+    tags_found = []
+    for tag in tags:
+        if pcre.search(tag['compiletag'], content):
+            tags_found.append(tag)
+
+    return {
+        'topics': list(set([tag['topic'] for tag in tags_found])),
+        'tags': [{ 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'], } for t in tags_found]
+    }

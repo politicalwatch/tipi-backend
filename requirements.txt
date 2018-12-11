@@ -4,3 +4,4 @@ marshmallow
 flask-mongoengine
 marshmallow-mongoengine
 flask_cors
+python-pcre==0.7
