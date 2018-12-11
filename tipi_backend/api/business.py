@@ -107,7 +107,7 @@ def get_places_stats(params):
     return _get_subdoc_stats(stats, 'placesByTopics', params['topic'], 'places')
 
 
-""" LABELS EXTRACTOR METHODS """
+""" LABEL EXTRACTOR METHODS """
 def get_tags():
     cache_key = 'tags-for-labeling'
     cached_tags = cache.get(cache_key)
@@ -134,7 +134,7 @@ def extract_labels_from_text(text, tags):
     for tag in tags:
         if pcre.search(tag['compiletag'], content):
             tags_found.append(tag)
-    print(tags_found)
+
     return {
         'topics': list(set([tag['topic'] for tag in tags_found])),
         'tags': [{ 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'] } for t in tags_found]
