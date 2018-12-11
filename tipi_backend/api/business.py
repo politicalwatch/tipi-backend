@@ -17,6 +17,7 @@ from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 from tipi_backend.database.models.stats import Stats
 
+cache = SimpleCache()
 
 """ TOPICS METHODS """
 
@@ -107,16 +108,14 @@ def get_places_stats(params):
 
 
 """ LABELS EXTRACTOR METHODS """
-cache = SimpleCache()
 def get_tags():
     cache_key = 'tags-for-labeling'
     cached_tags = cache.get(cache_key)
     if cached_tags is not None:
         return cached_tags
 
-    topics = TopicExtendedSchema(many=True).dump(Topic.objects())
     tags = []
-    for topic in topics[0]:
+    for topic in Topic.objects():
         for tag in topic['tags']:
             tags.append({
                 'topic': topic['name'],
@@ -128,18 +127,15 @@ def get_tags():
     return tags
 
 
-def extract_labels_from_text():
-    #test_initiative = get_initiative('3b4a1dedbd3df050bd21912fc8d55350414a5a65')
-    example = "¿Considera aceptable el Gobierno recortar las prestaciones por desempleo cuando la economía está creciendo"
-    content = example
+def extract_labels_from_text(text, tags):
+    content = text
 
-    tags = get_tags()
     tags_found = []
     for tag in tags:
         if pcre.search(tag['compiletag'], content):
             tags_found.append(tag)
-
+    print(tags_found)
     return {
         'topics': list(set([tag['topic'] for tag in tags_found])),
-        'tags': [{ 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'], } for t in tags_found]
+        'tags': [{ 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'] } for t in tags_found]
     }
