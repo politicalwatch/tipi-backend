@@ -1,5 +1,3 @@
-from werkzeug.contrib.cache import SimpleCache
-
 import itertools
 import json
 import pcre
@@ -18,7 +16,6 @@ from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 from tipi_backend.database.models.stats import Stats
 
-cache = SimpleCache()
 
 """ TOPICS METHODS """
 
@@ -110,11 +107,6 @@ def get_places_stats(params):
 
 """ LABEL EXTRACTOR METHODS """
 def get_tags():
-    cache_key = 'tags-for-labeling'
-    cached_tags = cache.get(cache_key)
-    if cached_tags is not None:
-        return cached_tags
-
     tags = []
     delimiter = '.*'
     for topic in Topic.objects():
@@ -134,16 +126,13 @@ def get_tags():
                     'tag': tag['tag'],
                     'subtopic': tag['subtopic']
                 })
-    cache.set(cache_key, tags, timeout=5*60)
     return tags
 
 
 def extract_labels_from_text(text, tags):
-    content = text
-
     tags_found = []
     for tag in tags:
-        if pcre.search(tag['compiletag'], content):
+        if pcre.search(tag['compiletag'], text):
             tags_found.append(tag)
 
     return {
