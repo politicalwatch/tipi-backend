@@ -1,5 +1,8 @@
 from tipi_backend.database import db
 
+import itertools
+import pcre
+
 
 class Tag(db.EmbeddedDocument):
     tag = db.StringField()
@@ -17,3 +20,26 @@ class Topic(db.Document):
 
     meta = {'collection': 'topics'}
     # TODO Add indexes https://mongoengine-odm.readthedocs.io/guide/defining-documents.html#indexes
+
+    @staticmethod
+    def get_tags():
+        tags = []
+        delimiter = '.*'
+        for topic in Topic.objects():
+            for tag in topic['tags']:
+                if tag['shuffle']:
+                    for permutation in itertools.permutations(tag['regex'].split(delimiter)):
+                        tags.append({
+                            'topic': topic['name'],
+                            'compiletag': pcre.compile('(?i)' + delimiter.join(permutation)),
+                            'tag': tag['tag'],
+                            'subtopic': tag['subtopic'],
+                        })
+                else:
+                    tags.append({
+                        'topic': topic['name'],
+                        'compiletag': pcre.compile('(?i)' + tag['regex']),
+                        'tag': tag['tag'],
+                        'subtopic': tag['subtopic']
+                    })
+        return tags
