@@ -1,5 +1,6 @@
 from werkzeug.contrib.cache import SimpleCache
 
+import itertools
 import json
 import pcre
 
@@ -115,14 +116,24 @@ def get_tags():
         return cached_tags
 
     tags = []
+    delimiter = '.*'
     for topic in Topic.objects():
         for tag in topic['tags']:
-            tags.append({
-                'topic': topic['name'],
-                'compiletag': pcre.compile('(?i)' + tag['regex']),
-                'tag': tag['tag'],
-                'subtopic': tag['subtopic']
-            })
+            if tag['shuffle']:
+                for permutation in itertools.permutations(tag['regex'].split(delimiter)):
+                    tags.append({
+                        'topic': topic['name'],
+                        'compiletag': pcre.compile('(?i)' + delimiter.join(permutation)),
+                        'tag': tag['tag'],
+                        'subtopic': tag['subtopic'],
+                    })
+            else:
+                tags.append({
+                    'topic': topic['name'],
+                    'compiletag': pcre.compile('(?i)' + tag['regex']),
+                    'tag': tag['tag'],
+                    'subtopic': tag['subtopic']
+                })
     cache.set(cache_key, tags, timeout=5*60)
     return tags
 
