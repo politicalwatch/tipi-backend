@@ -5,3 +5,4 @@ flask-mongoengine
 marshmallow-mongoengine
 flask_cors
 python-pcre==0.7
+git+https://github.com/politicalwatch/tipi-alerts.git

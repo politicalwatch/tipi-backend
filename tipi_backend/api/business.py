@@ -1,5 +1,8 @@
+from datetime import datetime
 import json
 import pcre
+
+import tipi_alerts
 
 from tipi_backend.database.models.topic import Topic
 from tipi_backend.database.schemas.topic import TopicSchema, TopicExtendedSchema
@@ -8,12 +11,14 @@ from tipi_backend.database.schemas.deputy import DeputySchema, DeputyExtendedSch
 from tipi_backend.database.models.parliamentarygroup import ParliamentaryGroup
 from tipi_backend.database.schemas.parliamentarygroup import ParliamentaryGroupSchema
 from tipi_backend.database.models.initiative import Initiative
+from tipi_backend.database.models.alert import Alert, Search
 from tipi_backend.database.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_backend.api.parsers import SearchInitiativeParser
 from tipi_backend.api.managers.initiative_places import InitiativePlaceManager
 from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 from tipi_backend.database.models.stats import Stats
+from tipi_backend.database.common import generateId
 
 
 """ TOPICS METHODS """
@@ -119,3 +124,54 @@ def extract_labels_from_text(text, tags):
         'topics': list(set([tag['topic'] for tag in tags_found])),
         'tags': [{ 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'] } for t in tags_found]
     }
+
+
+""" ALERTS METHODS """
+
+def save_alert(payload):
+    send_email = False
+    try:
+        payload['search'] = json.dumps(
+                SearchInitiativeParser(
+                    json.loads(payload['search'])
+                ).params)
+        alert = Alert.objects(email=payload['email']).first()
+        if not alert:
+            alert = Alert(
+                    id=generateId(payload['email']),
+                    email=payload['email']
+                    )
+            if len(alert.searches) == 0:
+                _add_search_to_alert(payload['search'], alert)
+                send_email = True
+        else:
+            searches = [s.search for s in alert.searches]
+            search_exists = False
+            for search in searches:
+                if payload['search'] == search:
+                    search_exists = True
+                    break
+            if not search_exists:
+                _add_search_to_alert(payload['search'], alert)
+                send_email = True
+
+        result = alert.save()
+        if result and send_email:
+            '''
+            Add init() before validate() to ensure it always use the same
+            celery instance, despite flask multithrading
+            '''
+            tipi_alerts.init()
+            tipi_alerts.validate.send_validation_emails.apply_async()
+    except Exception as e:
+        print(e)
+
+def _add_search_to_alert(search, alert):
+    now = datetime.now()
+    hash = generateId(str(search), str(now))
+    alert.searches.append(Search(
+        hash=hash,
+        search=search,
+        created=now
+        )
+    )
