@@ -15,6 +15,7 @@ from tipi_backend.api.endpoints.places import ns as places_namespace
 from tipi_backend.api.endpoints.initiative_types import ns as initiativetypes_namespace
 from tipi_backend.api.endpoints.initiative_status import ns as initiativestatus_namespace
 from tipi_backend.api.endpoints.stats import ns as stats_namespace
+from tipi_backend.api.endpoints.labels import ns as labels_namespace
 from tipi_backend.api.endpoints.alerts import ns as alerts_namespace
 from tipi_backend.api.restplus import api
 from tipi_backend.database import db
@@ -60,6 +61,7 @@ def initialize_app(flask_app):
     api.add_namespace(initiativetypes_namespace)
     api.add_namespace(initiativestatus_namespace)
     api.add_namespace(stats_namespace)
+    api.add_namespace(labels_namespace)
     api.add_namespace(alerts_namespace)
     flask_app.register_blueprint(blueprint)
 

@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import pcre
 
 import tipi_alerts
 
@@ -106,6 +107,23 @@ def get_places_stats(params):
     if params['subtopic'] is not None:
         return _get_subdoc_stats(stats, 'placesBySubtopics', params['subtopic'], 'places')
     return _get_subdoc_stats(stats, 'placesByTopics', params['topic'], 'places')
+
+
+""" LABEL EXTRACTOR METHODS """
+
+def get_tags():
+    return Topic.get_tags()
+
+def extract_labels_from_text(text, tags):
+    tags_found = []
+    for tag in tags:
+        if pcre.search(tag['compiletag'], text):
+            tags_found.append(tag)
+
+    return {
+        'topics': list(set([tag['topic'] for tag in tags_found])),
+        'tags': [{ 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'] } for t in tags_found]
+    }
 
 
 """ ALERTS METHODS """
