@@ -6,6 +6,7 @@ from werkzeug.contrib.fixers import ProxyFix
 from flask_cors import CORS
 
 from tipi_backend import settings
+from tipi_backend.validate_emails import validate_emails_blueprint
 from tipi_backend.api.endpoints.topics import ns as topics_namespace
 from tipi_backend.api.endpoints.deputies import ns as deputies_namespace
 from tipi_backend.api.endpoints.parliamentarygroups import ns as parliamentarygroups_namespace
@@ -14,6 +15,7 @@ from tipi_backend.api.endpoints.places import ns as places_namespace
 from tipi_backend.api.endpoints.initiative_types import ns as initiativetypes_namespace
 from tipi_backend.api.endpoints.initiative_status import ns as initiativestatus_namespace
 from tipi_backend.api.endpoints.stats import ns as stats_namespace
+from tipi_backend.api.endpoints.alerts import ns as alerts_namespace
 from tipi_backend.api.restplus import api
 from tipi_backend.database import db
 
@@ -45,6 +47,8 @@ def initialize_app(flask_app):
 
     db.init_app(flask_app)
 
+    flask_app.register_blueprint(validate_emails_blueprint)
+
     blueprint = Blueprint('api', __name__)
     CORS(blueprint)
     api.init_app(blueprint)
@@ -56,6 +60,7 @@ def initialize_app(flask_app):
     api.add_namespace(initiativetypes_namespace)
     api.add_namespace(initiativestatus_namespace)
     api.add_namespace(stats_namespace)
+    api.add_namespace(alerts_namespace)
     flask_app.register_blueprint(blueprint)
 
 
