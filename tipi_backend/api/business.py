@@ -131,10 +131,6 @@ def extract_labels_from_text(text, tags):
 def save_alert(payload):
     send_email = False
     try:
-        payload['search'] = json.dumps(
-                SearchInitiativeParser(
-                    json.loads(payload['search'])
-                ).params)
         alert = Alert.objects(email=payload['email']).first()
         if not alert:
             alert = Alert(
@@ -172,6 +168,11 @@ def _add_search_to_alert(search, alert):
     alert.searches.append(Search(
         hash=hash,
         search=search,
+        dbsearch=json.dumps(
+            SearchInitiativeParser(
+                json.loads(search)
+                ).params
+            ),
         created=now
         )
     )

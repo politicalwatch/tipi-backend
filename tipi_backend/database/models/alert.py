@@ -4,6 +4,7 @@ from tipi_backend.database import db
 class Search(db.DynamicEmbeddedDocument):
     hash = db.StringField()
     search = db.StringField()
+    dbsearch = db.StringField()
     created = db.DateTimeField()
     validated = db.BooleanField(default=False)
 
