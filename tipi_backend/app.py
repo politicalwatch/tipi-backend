@@ -6,7 +6,7 @@ from werkzeug.contrib.fixers import ProxyFix
 from flask_cors import CORS
 
 from tipi_backend import settings
-from tipi_backend.validate_emails import validate_emails_blueprint
+from tipi_backend.manage_alerts_by_email import alerts_by_email_blueprint
 from tipi_backend.api.endpoints.topics import ns as topics_namespace
 from tipi_backend.api.endpoints.deputies import ns as deputies_namespace
 from tipi_backend.api.endpoints.parliamentarygroups import ns as parliamentarygroups_namespace
@@ -48,7 +48,7 @@ def initialize_app(flask_app):
 
     db.init_app(flask_app)
 
-    flask_app.register_blueprint(validate_emails_blueprint)
+    flask_app.register_blueprint(alerts_by_email_blueprint)
 
     blueprint = Blueprint('api', __name__)
     CORS(blueprint)
