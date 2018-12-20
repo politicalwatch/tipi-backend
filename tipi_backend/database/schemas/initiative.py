@@ -23,12 +23,20 @@ class InitiativeSchema(ma.ModelSchema):
                 'place': {'load_only': True},
                 'processing': {'load_only': True},
                 'url': {'load_only': True},
-                'tags': {'load_only': True},
                 'tagged': {'load_only': True},
                 }
 
     authors = AuthorsField(attribute='author_parliamentarygroups')
     deputies = DeputiesField(attribute='author_deputies')
+    subtopics = ma.fields.Method(serialize="_subtopics_serializer")
+    tags = ma.fields.Method(serialize="_tags_serializer")
+
+    def _subtopics_serializer(self, obj):
+        return list(set([t.subtopic for t in obj.tags]))
+
+    def _tags_serializer(self, obj):
+        return [t.tag for t in obj.tags]
+
 
 
 class InitiativeExtendedSchema(ma.ModelSchema):
