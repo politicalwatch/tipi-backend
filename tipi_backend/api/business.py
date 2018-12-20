@@ -129,38 +129,34 @@ def extract_labels_from_text(text, tags):
 """ ALERTS METHODS """
 
 def save_alert(payload):
-    send_email = False
-    try:
-        alert = Alert.objects(email=payload['email']).first()
-        if not alert:
-            alert = Alert(
-                    id=generateId(payload['email']),
-                    email=payload['email']
-                    )
-            if len(alert.searches) == 0:
-                _add_search_to_alert(payload['search'], alert)
-                send_email = True
-        else:
-            searches = [s.search for s in alert.searches]
-            search_exists = False
-            for search in searches:
-                if payload['search'] == search:
-                    search_exists = True
-                    break
-            if not search_exists:
-                _add_search_to_alert(payload['search'], alert)
-                send_email = True
+    alert = Alert.objects(email=payload['email']).first()
+    if not alert:
+        alert = Alert(
+                id=generateId(payload['email']),
+                email=payload['email']
+                )
+        _add_search_to_alert(payload['search'], alert)
+    else:
+        searches = [s.search for s in alert.searches]
+        search_exists = False
+        for search in searches:
+            if payload['search'] == search:
+                search_exists = True
+                break
+        if search_exists:
+            return
+        _add_search_to_alert(payload['search'], alert)
 
-        result = alert.save()
-        if result and send_email:
-            '''
-            Add init() before validate() to ensure it always use the same
-            celery instance, despite flask multithrading
-            '''
-            tipi_alerts.init()
-            tipi_alerts.validate.send_validation_emails.apply_async()
-    except Exception as e:
-        print(e)
+    result = alert.save()
+    if not result:
+        raise Exception
+
+    '''
+    Add init() before validate() to ensure it always use the same
+    celery instance, despite flask multithrading
+    '''
+    tipi_alerts.init()
+    tipi_alerts.validate.send_validation_emails.apply_async()
 
 def _add_search_to_alert(search, alert):
     now = datetime.now()

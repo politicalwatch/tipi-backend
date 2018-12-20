@@ -48,8 +48,6 @@ def initialize_app(flask_app):
 
     db.init_app(flask_app)
 
-    flask_app.register_blueprint(alerts_by_email_blueprint)
-
     blueprint = Blueprint('api', __name__)
     CORS(blueprint)
     api.init_app(blueprint)
@@ -62,7 +60,11 @@ def initialize_app(flask_app):
     api.add_namespace(initiativestatus_namespace)
     api.add_namespace(stats_namespace)
     api.add_namespace(labels_namespace)
-    api.add_namespace(alerts_namespace)
+
+    if settings.USE_ALERTS:
+        api.add_namespace(alerts_namespace)
+        flask_app.register_blueprint(alerts_by_email_blueprint)
+
     flask_app.register_blueprint(blueprint)
 
 
