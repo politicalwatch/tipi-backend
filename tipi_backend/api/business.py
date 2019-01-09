@@ -164,7 +164,7 @@ def _add_search_to_alert(search, alert):
     alert.searches.append(Search(
         hash=hash,
         search=search,
-        dbsearch=json.dumps(
+        dbsearch=str(
             SearchInitiativeParser(
                 json.loads(search)
                 ).params
