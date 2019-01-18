@@ -160,7 +160,7 @@ def save_alert(payload):
 
 def _add_search_to_alert(search, alert):
     now = datetime.now()
-    hash = generateId(str(search), str(now))
+    hash = generateId(alert.email, str(search), str(now))
     alert.searches.append(Search(
         hash=hash,
         search=search,
