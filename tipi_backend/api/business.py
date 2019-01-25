@@ -118,7 +118,8 @@ def extract_labels_from_text(text, tags):
     tags_found = []
     for tag in tags:
         if pcre.search(tag['compiletag'], text):
-            tags_found.append(tag)
+            if tag not in tags_found:
+                tags_found.append(tag)
 
     return {
         'topics': list(set([tag['topic'] for tag in tags_found])),
