@@ -31,15 +31,15 @@ class Topic(db.Document):
                     for permutation in itertools.permutations(tag['regex'].split(delimiter)):
                         tags.append({
                             'topic': topic['name'],
-                            'compiletag': pcre.compile('(?i)' + delimiter.join(permutation)),
-                            'tag': tag['tag'],
                             'subtopic': tag['subtopic'],
+                            'tag': tag['tag'],
+                            'compiletag': pcre.compile('(?i)' + delimiter.join(permutation))
                         })
                 else:
                     tags.append({
                         'topic': topic['name'],
-                        'compiletag': pcre.compile('(?i)' + tag['regex']),
+                        'subtopic': tag['subtopic'],
                         'tag': tag['tag'],
-                        'subtopic': tag['subtopic']
+                        'compiletag': pcre.compile('(?i)' + tag['regex'])
                     })
         return tags
