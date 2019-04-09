@@ -115,17 +115,21 @@ def get_tags():
     return Topic.get_tags()
 
 def extract_labels_from_text(text, tags):
-    text = " ".join(text.splitlines()) 
     tags_found = []
-    for tag in tags:
-        if pcre.search(tag['compiletag'], text):
-            tag.pop('compiletag')
-            if tag not in tags_found:
-                tags_found.append(tag)
+    for line in text.splitlines():
+        for tag in tags:
+            if pcre.search(tag['compiletag'], line):
+                tag_copy = tag.copy()
+                tag_copy.pop('compiletag')
+                if tag_copy not in tags_found:
+                    tags_found.append(tag_copy)
 
     return {
         'topics': sorted(list(set([tag['topic'] for tag in tags_found]))),
-        'tags': sorted([{ 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'] } for t in tags_found], key=lambda t: t['topic'])
+        'tags': sorted([
+            { 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'] }
+            for t in tags_found
+            ], key=lambda t: t['topic'])
     }
 
 
