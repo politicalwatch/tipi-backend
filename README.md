@@ -10,7 +10,7 @@ TIPI BACKEND
 ## Setup
 
 ```
-git clone git@github.com:ciecode/tipi-backend.git
+git clone git@github.com:politicalwatch/tipi-backend.git
 cd tipi-backend
 pip install -r requirements_dev.txt
 python setup.py develop
