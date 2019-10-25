@@ -43,28 +43,33 @@ def configure_app(flask_app):
             }
 
 
-def initialize_app(flask_app):
-    configure_app(flask_app)
-
-    db.init_app(flask_app)
-
-    blueprint = Blueprint('api', __name__)
-    CORS(blueprint)
-    api.init_app(blueprint)
-    api.add_namespace(topics_namespace)
-    api.add_namespace(deputies_namespace)
-    api.add_namespace(parliamentarygroups_namespace)
-    api.add_namespace(initiatives_namespace)
-    api.add_namespace(places_namespace)
-    api.add_namespace(initiativetypes_namespace)
-    api.add_namespace(initiativestatus_namespace)
-    api.add_namespace(stats_namespace)
-    api.add_namespace(labels_namespace)
+def add_namespaces(app, api):
+    namespaces = [ns for ns in [
+            topics_namespace,
+            deputies_namespace,
+            parliamentarygroups_namespace,
+            initiatives_namespace,
+            places_namespace,
+            initiativetypes_namespace,
+            initiativestatus_namespace,
+            stats_namespace,
+            labels_namespace
+            ] if ns.name not in settings.EXCLUDE_NAMESPACES]
+    for ns in namespaces:
+        api.add_namespace(ns)
 
     if settings.USE_ALERTS:
         api.add_namespace(alerts_namespace)
-        flask_app.register_blueprint(alerts_by_email_blueprint)
+        app.register_blueprint(alerts_by_email_blueprint)
 
+
+def initialize_app(flask_app):
+    configure_app(flask_app)
+    db.init_app(flask_app)
+    blueprint = Blueprint('api', __name__)
+    CORS(blueprint)
+    api.init_app(blueprint)
+    add_namespaces(flask_app, api)
     flask_app.register_blueprint(blueprint)
 
 

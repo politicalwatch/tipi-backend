@@ -2,10 +2,9 @@ import logging
 import json
 
 from flask import request, abort
-from flask_restplus import Resource, fields
+from flask_restplus import Namespace, Resource, fields
 
 from tipi_backend.api.business import save_alert
-from tipi_backend.api.restplus import api
 from tipi_backend.api.serializers import alert_model
 from tipi_backend.api.parsers import parser_initiative
 from tipi_backend.settings import USE_ALERTS
@@ -13,7 +12,7 @@ from tipi_backend.settings import USE_ALERTS
 
 log = logging.getLogger(__name__)
 
-ns = api.namespace('alerts', description='Operations related to alerts')
+ns = Namespace('alerts', description='Operations related to alerts')
 
 if USE_ALERTS:
     @ns.route('/')
@@ -25,7 +24,7 @@ if USE_ALERTS:
         def post(self):
             ''' Create a new alert '''
             try:
-                save_alert(api.payload)
+                save_alert(ns.payload)
             except Exception as e:
                 abort(500)
 

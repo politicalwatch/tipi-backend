@@ -1,8 +1,8 @@
 import logging
 
 from flask import request
-from flask_restplus import Resource
-from tipi_backend.api.restplus import api
+from flask_restplus import Namespace, Resource
+
 from tipi_backend.api.parsers import parser_stats
 from tipi_backend.api.business import \
         get_overall_stats, \
@@ -14,8 +14,7 @@ from tipi_backend.api.business import \
 
 log = logging.getLogger(__name__)
 
-ns = api.namespace('stats', description='Operations related to stats')
-
+ns = Namespace('stats', description='Operations related to stats')
 
 
 @ns.route('/overall')

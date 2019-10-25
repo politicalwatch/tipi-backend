@@ -2,10 +2,9 @@ import logging
 import json
 
 from flask import request
-from flask_restplus import Resource
+from flask_restplus import Namespace, Resource
 from mongoengine.queryset import DoesNotExist
 
-from tipi_backend.api.restplus import api
 from tipi_backend.api.parsers import parser_initiative
 from tipi_backend.api.business import search_initiatives, get_initiative
 from tipi_backend.api.validators import validate_id_as_hash
@@ -14,7 +13,7 @@ from tipi_backend.database.models.searches_tracker import SearchesTracker
 
 log = logging.getLogger(__name__)
 
-ns = api.namespace('initiatives', description='Operations related to initiatives')
+ns = Namespace('initiatives', description='Operations related to initiatives')
 
 
 
@@ -41,7 +40,7 @@ class InitiativesCollection(Resource):
 
 @ns.route('/<id>')
 @ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
-@api.response(404, 'Initiative not found.')
+@ns.response(404, 'Initiative not found.')
 class InitiativeItem(Resource):
 
     @validate_id_as_hash

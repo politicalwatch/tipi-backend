@@ -24,3 +24,6 @@ MONGO_PASSWORD = ''
 
 # Alerts
 USE_ALERTS = False
+
+# Exclude Namespaces
+EXCLUDE_NAMESPACES = []

@@ -1,16 +1,16 @@
 import logging
 
 from flask import request
-from flask_restplus import Resource
-from tipi_backend.api.restplus import api
+from flask_restplus import Namespace, Resource
+from werkzeug.contrib.cache import SimpleCache
+
 from tipi_backend.api.parsers import parser_labels
 from tipi_backend.api.business import extract_labels_from_text, get_tags
-from werkzeug.contrib.cache import SimpleCache
 
 
 log = logging.getLogger(__name__)
 
-ns = api.namespace('labels', description='Operations related to label extraction')
+ns = Namespace('labels', description='Operations related to label extraction')
 cache = SimpleCache()
 
 @ns.route('/extract')
