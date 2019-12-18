@@ -117,29 +117,20 @@ def get_tags():
 
 def extract_labels_from_text(text, tags):
     tags_found = []
-    for idx, line in enumerate(text.splitlines()):
+    for line in text.splitlines():
         for tag in tags:
-            if pcre.search(tag['compiletag'], line):
+            result = pcre.findall(tag['compiletag'], line)
+            times = len(result)
+            if times > 0:
                 tag_copy = tag.copy()
                 tag_copy.pop('compiletag')
-                tag_copy['idx'] = idx
+                tag_copy['times'] = times
                 tags_found.append(tag_copy)
 
-    tags_unique = []
-    tagsid_unique = []
-    for tag in tags_found:
-        if not tag['tag'] in tagsid_unique:
-            tags_unique.append(tag)
-            tagsid_unique.append(tag['tag'])
-
     return {
-        'topics': sorted(list(set([tag['topic'] for tag in tags_unique]))),
+        'topics': sorted(list(set([tag['topic'] for tag in tags_found]))),
         'tags': sorted([
-            { 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'] }
-            for t in tags_unique
-            ], key=lambda t: t['topic']),
-        'tags_totals': sorted([
-            { 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'], 'idx': t['idx']}
+            { 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'], 'times': t['times']}
             for t in tags_found
             ], key=lambda t: t['topic']),
     }
