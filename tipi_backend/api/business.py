@@ -129,10 +129,7 @@ def extract_labels_from_text(text, tags):
 
     return {
         'topics': sorted(list(set([tag['topic'] for tag in tags_found]))),
-        'tags': sorted([
-            { 'topic': t['topic'], 'subtopic': t['subtopic'], 'tag': t['tag'], 'times': t['times']}
-            for t in tags_found
-            ], key=lambda t: t['topic']),
+        'tags': sorted(tags_found, key=lambda t: (t['topic'], t['subtopic'], t['tag'])),
     }
 
 
