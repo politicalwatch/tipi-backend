@@ -115,6 +115,19 @@ def get_places_stats(params):
 def get_tags():
     return Topic.get_tags()
 
+def __append_tag_to_founds(tags_found, new_tag):
+    found = False
+    for tag in tags_found:
+        if tag['topic'] == new_tag['topic'] \
+                and tag['subtopic'] == new_tag['subtopic'] \
+                and tag['tag'] == new_tag['tag']:
+                    found = True
+                    tag['times'] = tag['times'] + new_tag['times']
+                    break
+    if not found:
+        tags_found.append(new_tag)
+
+
 def extract_labels_from_text(text, tags):
     tags_found = []
     for line in text.splitlines():
@@ -125,7 +138,7 @@ def extract_labels_from_text(text, tags):
                 tag_copy = tag.copy()
                 tag_copy.pop('compiletag')
                 tag_copy['times'] = times
-                tags_found.append(tag_copy)
+                __append_tag_to_founds(tags_found, tag_copy)
 
     return {
         'topics': sorted(list(set([tag['topic'] for tag in tags_found]))),
