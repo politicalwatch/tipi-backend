@@ -3,6 +3,7 @@ import pcre
 
 from tipi_backend.api.business import extract_labels_from_text
 
+
 class TestBusiness(unittest.TestCase):
 
     tags = [{
