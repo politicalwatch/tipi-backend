@@ -2,7 +2,6 @@ import logging
 
 from flask import request
 from flask_restplus import Namespace, Resource
-from mongoengine.queryset import DoesNotExist
 
 from tipi_backend.api.parsers import parser_authors
 from tipi_backend.api.business import get_deputies, get_deputy

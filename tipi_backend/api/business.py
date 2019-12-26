@@ -4,22 +4,23 @@ import pcre
 
 import tipi_alerts
 
-from tipi_backend.database.models.topic import Topic
-from tipi_backend.database.schemas.topic import TopicSchema, TopicExtendedSchema
-from tipi_backend.database.models.deputy import Deputy
-from tipi_backend.database.schemas.deputy import DeputySchema, DeputyExtendedSchema
-from tipi_backend.database.models.parliamentarygroup import ParliamentaryGroup
-from tipi_backend.database.schemas.parliamentarygroup import ParliamentaryGroupSchema
-from tipi_backend.database.models.initiative import Initiative
-from tipi_backend.database.models.alert import Alert, Search
-from tipi_backend.database.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
-from tipi_backend.database.models.place import Place
-from tipi_backend.database.schemas.place import PlaceSchema
+from tipi_data.models.topic import Topic
+from tipi_data.schemas.topic import TopicSchema, TopicExtendedSchema
+from tipi_data.models.deputy import Deputy
+from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
+from tipi_data.models.parliamentarygroup import ParliamentaryGroup
+from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
+from tipi_data.models.initiative import Initiative
+from tipi_data.models.alert import Alert, Search
+from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
+from tipi_data.models.place import Place
+from tipi_data.schemas.place import PlaceSchema
+from tipi_data.models.stats import Stats
+from tipi_data.utils import generateId
+
 from tipi_backend.api.parsers import SearchInitiativeParser
 from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
-from tipi_backend.database.models.stats import Stats
-from tipi_backend.database.common import generateId
 
 
 """ TOPICS METHODS """

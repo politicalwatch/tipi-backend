@@ -1,8 +1,9 @@
 import re
 import datetime
-from flask_restplus import reqparse
 
-from tipi_backend.database.models.parliamentarygroup import ParliamentaryGroup
+from flask_restplus import reqparse
+from tipi_data.models.parliamentarygroup import ParliamentaryGroup
+
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 from tipi_backend.api.validators import validate_date
 

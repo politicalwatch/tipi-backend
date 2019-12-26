@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template 
+from tipi_data.models.alert import Alert, Search
 
-from tipi_backend.database.models.alert import Alert, Search
 from tipi_backend import settings
 
 

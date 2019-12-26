@@ -3,12 +3,11 @@ import json
 
 from flask import request
 from flask_restplus import Namespace, Resource
-from mongoengine.queryset import DoesNotExist
+from tipi_data.models.searches_tracker import SearchesTracker
 
 from tipi_backend.api.parsers import parser_initiative
 from tipi_backend.api.business import search_initiatives, get_initiative
 from tipi_backend.api.validators import validate_id_as_hash
-from tipi_backend.database.models.searches_tracker import SearchesTracker
 
 
 log = logging.getLogger(__name__)

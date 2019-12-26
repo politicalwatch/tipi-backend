@@ -2,7 +2,6 @@ import logging
 
 from flask import request
 from flask_restplus import Namespace, Resource
-from mongoengine.queryset import DoesNotExist
 
 from tipi_backend.api.business import get_topics, get_topic
 from tipi_backend.api.validators import validate_id_as_hash

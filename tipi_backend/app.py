@@ -18,7 +18,6 @@ from tipi_backend.api.endpoints.stats import ns as stats_namespace
 from tipi_backend.api.endpoints.labels import ns as labels_namespace
 from tipi_backend.api.endpoints.alerts import ns as alerts_namespace
 from tipi_backend.api.restplus import api
-from tipi_backend.database import db
 
 
 app = Flask(__name__)
@@ -34,13 +33,6 @@ def configure_app(flask_app):
     flask_app.config['RESTPLUS_VALIDATE'] = settings.RESTPLUS_VALIDATE
     flask_app.config['RESTPLUS_MASK_SWAGGER'] = settings.RESTPLUS_MASK_SWAGGER
     flask_app.config['ERROR_404_HELP'] = settings.RESTPLUS_ERROR_404_HELP
-    flask_app.config['MONGODB_SETTINGS'] = {
-            'host': settings.MONGO_HOST,
-            'port': settings.MONGO_PORT,
-            'db': settings.MONGO_DBNAME,
-            'username': settings.MONGO_USERNAME,
-            'password': settings.MONGO_PASSWORD
-            }
 
 
 def add_namespaces(app, api):
@@ -65,7 +57,6 @@ def add_namespaces(app, api):
 
 def initialize_app(flask_app):
     configure_app(flask_app)
-    db.init_app(flask_app)
     blueprint = Blueprint('api', __name__)
     CORS(blueprint)
     api.init_app(blueprint)
