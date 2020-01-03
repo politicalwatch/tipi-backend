@@ -30,3 +30,14 @@ Finally, edit *tipi_backend/settings.py* file with your specific values.
 ```
 python tipi_backend/app.py
 ```
+
+
+## Load testing
+
+For exec load testing is necessary install locust. You can initialize the tool:
+
+```
+$ locust Labeling
+```
+
+This start local server in port 8089.
