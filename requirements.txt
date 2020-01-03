@@ -1,8 +1,9 @@
-Flask
-flask-restplus
-marshmallow==2.16.3
-flask-mongoengine
-marshmallow-mongoengine
-flask_cors
-python-pcre==0.7
+Flask-Cors==3.0.8
+Flask==1.1.1
+flask-mongoengine==0.9.5
+flask-restplus==0.13.0
 git+https://github.com/politicalwatch/tipi-alerts.git
+gunicorn==20.0.4
+marshmallow-mongoengine==0.9.1
+marshmallow==2.16.3
+python-pcre==0.7
