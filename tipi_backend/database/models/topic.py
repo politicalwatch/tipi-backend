@@ -24,9 +24,9 @@ class Topic(db.Document):
     @staticmethod
     def get_tags():
         tags = []
-        delimiter = '.*'
         for topic in Topic.objects():
             for tag in topic['tags']:
+                delimiter = '.*?' if '.*?' in tag['regex'] else '.*'
                 if tag['shuffle']:
                     for permutation in itertools.permutations(tag['regex'].split(delimiter)):
                         tags.append({
