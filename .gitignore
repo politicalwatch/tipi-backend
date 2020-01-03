@@ -1,5 +1,7 @@
 __pycache__
 *.pyc
+.coverage
+htmlcov/
 
 tipi_backend.egg-info
 tipi_backend/settings.py
