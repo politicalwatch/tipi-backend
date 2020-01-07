@@ -36,7 +36,10 @@ parser_authors.add_argument('name', type=str, location='args', help='Send a name
 
 
 parser_labels_from_text = reqparse.RequestParser()
-parser_labels_from_text.add_argument(name='text', type=str, location='form', help='Text to be parsed for tags')
+parser_labels_from_text.add_argument(name='text', type=str, required=True, location='form', help='Text to be parsed for tags')
+
+parser_labels_from_file = reqparse.RequestParser()
+parser_labels_from_file.add_argument(name='file', required=True, location='files', help='File to be parsed for tags')
 
 
 class SearchInitiativeParser:
