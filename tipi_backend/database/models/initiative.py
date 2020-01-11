@@ -7,6 +7,7 @@ class Tag(db.EmbeddedDocument):
     topic = db.StringField()
     subtopic = db.StringField()
     tag = db.StringField()
+    times = db.IntField()
 
 
 class Initiative(db.DynamicDocument):
