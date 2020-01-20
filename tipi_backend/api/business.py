@@ -130,7 +130,8 @@ def __append_tag_to_founds(tags_found, new_tag):
 
 def extract_labels_from_text(text, tags):
     tags_found = []
-    for line in text.splitlines():
+    text = ''.join(text.splitlines())
+    for line in text.split('.'):
         for tag in tags:
             result = pcre.findall(tag['compiletag'], line)
             times = len(result)
