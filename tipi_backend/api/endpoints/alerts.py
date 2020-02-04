@@ -6,7 +6,6 @@ from flask_restplus import Namespace, Resource, fields
 
 from tipi_backend.api.business import save_alert
 from tipi_backend.api.serializers import alert_model
-from tipi_backend.api.parsers import parser_initiative
 
 
 log = logging.getLogger(__name__)
