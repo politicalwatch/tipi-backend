@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import ast
 import pcre
 
 import tipi_alerts
@@ -18,6 +19,8 @@ from tipi_backend.database.schemas.place import PlaceSchema
 from tipi_backend.api.parsers import SearchInitiativeParser
 from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
+from tipi_backend.database.models.scanned import Scanned
+from tipi_backend.database.schemas.scanned import ScannedSchema
 from tipi_backend.database.models.stats import Stats
 from tipi_backend.database.common import generateId
 
@@ -193,3 +196,22 @@ def _add_search_to_alert(search, alert):
         created=now
         )
     )
+
+
+''' SCANNED METHODS '''
+
+def get_scanned(id):
+    return ScannedSchema().dump(Scanned.objects.get(id=id))
+
+def save_scanned(payload):
+    scanned = Scanned(
+            id=generateId(payload['title'], payload['extract']),
+            title=payload['title'],
+            extract=payload['extract'],
+            result=ast.literal_eval(payload['result']),
+            created=datetime.now()
+            )
+    saved = scanned.save()
+    if not saved:
+        raise Exception
+    return scanned.id

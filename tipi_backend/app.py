@@ -18,6 +18,7 @@ from tipi_backend.api.endpoints.initiative_status import ns as initiativestatus_
 from tipi_backend.api.endpoints.stats import ns as stats_namespace
 from tipi_backend.api.endpoints.labels import ns as labels_namespace
 from tipi_backend.api.endpoints.alerts import ns as alerts_namespace
+from tipi_backend.api.endpoints.scanned import ns as scanned_namespace
 from tipi_backend.api.restplus import api
 from tipi_backend.database import db
 
@@ -44,7 +45,8 @@ def add_namespaces(app):
                   initiativetypes_namespace,
                   initiativestatus_namespace,
                   stats_namespace,
-                  labels_namespace
+                  labels_namespace,
+                  scanned_namespace
     ]
     if env.get('USE_ALERTS', False):
         namespaces.append(alerts_namespace)
