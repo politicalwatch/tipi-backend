@@ -18,7 +18,7 @@ class Config:
     MONGODB_SETTINGS = {
         'host': env.get('MONGO_HOST', '0.0.0.0'),
         'port': int(env.get('MONGO_PORT', '27017')),
-        'db': env.get('MONGO_DBNAME', 'tipidb'),
-        'username': env.get('MONGO_USERNAME', 'tipi'),
+        'db': env.get('MONGO_DB_NAME', 'tipidb'),
+        'username': env.get('MONGO_USER', 'tipi'),
         'password': env.get('MONGO_PASSWORD', 'tipi')
     }

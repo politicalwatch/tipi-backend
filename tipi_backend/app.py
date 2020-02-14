@@ -3,7 +3,7 @@ import logging.config
 import os
 from os import environ as env
 from flask import Flask, Blueprint
-from werkzeug.contrib.fixers import ProxyFix
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_cors import CORS
 
 from tipi_backend.settings import Config
