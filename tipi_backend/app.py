@@ -8,6 +8,7 @@ from flask_cors import CORS
 
 from tipi_backend.settings import Config
 from tipi_backend.manage_alerts_by_email import alerts_by_email_blueprint
+from tipi_backend.api.endpoints import limiter
 from tipi_backend.api.endpoints.topics import ns as topics_namespace
 from tipi_backend.api.endpoints.deputies import ns as deputies_namespace
 from tipi_backend.api.endpoints.parliamentarygroups import ns as parliamentarygroups_namespace
@@ -57,6 +58,7 @@ def add_namespaces(app):
 
 def initialize_app(app):
     db.init_app(app)
+    limiter.init_app(app)
     blueprint = Blueprint('api', __name__)
     CORS(blueprint)
     api.init_app(blueprint)
