@@ -1,10 +1,12 @@
 import logging.config
-
 import os
 from os import environ as env
+
+import sentry_sdk
 from flask import Flask, Blueprint
-from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_cors import CORS
+from sentry_sdk.integrations.flask import FlaskIntegration
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from tipi_backend.settings import Config
 from tipi_backend.manage_alerts_by_email import alerts_by_email_blueprint
@@ -23,7 +25,17 @@ from tipi_backend.api.restplus import api
 from tipi_backend.database import db
 
 
+def add_sentry():
+    SENTRY_DSN = env.get('SENTRY_DSN', None)
+    if SENTRY_DSN:
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[FlaskIntegration()]
+        )
+
+
 def create_app(config=Config):
+    add_sentry()
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config.from_object(config)
@@ -47,7 +59,7 @@ def add_namespaces(app):
                   stats_namespace,
                   labels_namespace
     ]
-    if env.get('USE_ALERTS', False):
+    if env.get('USE_ALERTS', 'False') == 'True':
         namespaces.append(alerts_namespace)
 
     for ns in namespaces:
@@ -65,7 +77,7 @@ def initialize_app(app):
     api.init_app(blueprint)
     add_namespaces(app)
     app.register_blueprint(blueprint)
-    if env.get('USE_ALERTS', False):
+    if env.get('USE_ALERTS', 'False') == 'True':
         app.register_blueprint(alerts_by_email_blueprint)
 
 

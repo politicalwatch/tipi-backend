@@ -10,4 +10,5 @@ gunicorn==20.0.4
 marshmallow-mongoengine==0.9.1
 marshmallow==2.16.3
 python-pcre==0.7
+sentry-sdk[flask]==0.14.1
 textract==1.6.3
