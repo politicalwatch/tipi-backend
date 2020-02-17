@@ -13,6 +13,7 @@ class Config:
     RESTPLUS_VALIDATE = env.get('RESTPLUS_VALIDATE', "True") == "True"
     RESTPLUS_MASK_SWAGGER = env.get('RESTPLUS_MASK_SWAGGER', "False") == "True"
     ERROR_404_HELP = env.get('ERROR_404_HELP', "False") == "True"
+    USE_ALERTS = env.get('USE_ALERTS', 'False') == 'True'
 
     # Mongo settings
     MONGODB_SETTINGS = {

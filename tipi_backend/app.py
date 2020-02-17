@@ -59,7 +59,7 @@ def add_namespaces(app):
                   stats_namespace,
                   labels_namespace
     ]
-    if env.get('USE_ALERTS', 'False') == 'True':
+    if Config.USE_ALERTS:
         namespaces.append(alerts_namespace)
 
     for ns in namespaces:
@@ -77,7 +77,7 @@ def initialize_app(app):
     api.init_app(blueprint)
     add_namespaces(app)
     app.register_blueprint(blueprint)
-    if env.get('USE_ALERTS', 'False') == 'True':
+    if Config.USE_ALERTS:
         app.register_blueprint(alerts_by_email_blueprint)
 
 
