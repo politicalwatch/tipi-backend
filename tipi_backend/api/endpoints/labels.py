@@ -27,4 +27,4 @@ class LabelsExtractor(Resource):
         return extract_labels_from_text(
             request.form['text'],
             tags
-        )
+        ), 200
