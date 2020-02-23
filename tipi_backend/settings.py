@@ -28,10 +28,17 @@ class Config:
     CACHE = {
         'CACHE_TYPE': env.get('CACHE_TYPE', 'redis'),
         'CACHE_DEFAULT_TIMEOUT': int(env.get('CACHE_DEFAULT_TIMEOUT', '600')),
-        'CACHE_KEY_PREFIX': env.get('CACHE_KEY_PREFIX', 'pw'),
+        'CACHE_KEY_PREFIX': env.get('CACHE_KEY_PREFIX', ''),
         'CACHE_REDIS_HOST': env.get('CACHE_REDIS_HOST', 'redis'),
         'CACHE_REDIS_PORT': int(env.get('CACHE_REDIS_PORT', '6379')),
         'CACHE_REDIS_PASSWORD': env.get('CACHE_REDIS_PASSWORD', ''),
         'CACHE_REDIS_DB': int(env.get('CACHE_REDIS_DB', '8')),
-        'CACHE_REDIS_URL': env.get('CACHE_REDIS_URL', 'redis://redis:6379/8'),
     }
+
+    # App
+    CACHE_TAGS = env.get('CACHE_TAGS', 'tags-for-labeling')
+    LABELING_MAX_WORD = int(env.get('LABELING_MAX_WORD', '2500'))
+
+    text = "Etiquetando ... Su resultado será publicado en {}".format(SERVER_NAME)
+    text += "/labels/result/{}. Tiempo aproximado: {} segundos"
+    TASK_LABELING_TEXT = env.get('TASK_LABELING_TEXT', text)
