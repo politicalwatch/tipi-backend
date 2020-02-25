@@ -22,7 +22,7 @@ class ScannedCollection(Resource):
     def post(self):
         ''' Create a new scanned '''
         try:
-            return save_scanned(ns.payload)
+            return save_scanned(ns.payload), 201
         except Exception as e:
             abort(500)
 

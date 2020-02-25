@@ -1,7 +1,9 @@
 from datetime import datetime
+from os import environ as env
 import json
 import ast
 import pcre
+import logging
 
 import tipi_alerts
 
@@ -132,6 +134,8 @@ def __append_tag_to_founds(tags_found, new_tag):
 
 
 def extract_labels_from_text(text, tags):
+    TEXT_EXTRACT_SIZE = int(env.get('SCANNED_TEXT_EXTRACT_SIZE', 500))
+    text_extract = text if len(text) <= TEXT_EXTRACT_SIZE else text[:TEXT_EXTRACT_SIZE-3]+'...'
     tags_found = []
     text = ''.join(text.splitlines())
     for line in text.split('.'):
@@ -145,9 +149,12 @@ def extract_labels_from_text(text, tags):
                 __append_tag_to_founds(tags_found, tag_copy)
 
     return {
-        'topics': sorted(list(set([tag['topic'] for tag in tags_found]))),
-        'tags': sorted(tags_found, key=lambda t: (t['topic'], t['subtopic'], t['tag'])),
-    }
+            'extract': text_extract,
+            'result': {
+                'topics': sorted(list(set([tag['topic'] for tag in tags_found]))),
+                'tags': sorted(tags_found, key=lambda t: (t['topic'], t['subtopic'], t['tag'])),
+                }
+            }
 
 
 """ ALERTS METHODS """
@@ -205,7 +212,7 @@ def get_scanned(id):
 
 def save_scanned(payload):
     scanned = Scanned(
-            id=generateId(payload['title'], payload['extract']),
+            id=generateId(payload['title'], payload['extract'], str(datetime.now())),
             title=payload['title'],
             extract=payload['extract'],
             result=ast.literal_eval(payload['result']),
@@ -214,4 +221,8 @@ def save_scanned(payload):
     saved = scanned.save()
     if not saved:
         raise Exception
-    return scanned.id
+    return {
+            'id': scanned.id,
+            'title': scanned.title,
+            'extract': scanned.extract,
+            }
