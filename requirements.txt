@@ -1,5 +1,8 @@
+Flask-Caching==1.8.0
 Flask-Cors==3.0.8
+Flask-Limiter==1.1.0
 Flask==1.1.1
+Werkzeug==0.16.1
 flask-mongoengine==0.9.5
 flask-restplus==0.13.0
 git+https://github.com/politicalwatch/tipi-alerts.git
@@ -7,4 +10,5 @@ gunicorn==20.0.4
 marshmallow-mongoengine==0.9.1
 marshmallow==2.16.3
 python-pcre==0.7
+sentry-sdk[flask]==0.14.1
 textract==1.6.3

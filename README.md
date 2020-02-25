@@ -42,3 +42,18 @@ $ locust Labeling
 ```
 
 This start local server in port 8089.
+
+
+## Run tests from docker
+
+With docker-compose executing, you should exec the next command:
+
+```
+docker exec -ti tipi-backend sh runtests.sh
+```
+
+If you only want to execute one test, you can restrict pytest with -k option:
+
+```
+docker exec -ti tipi-backend pytest -v -s --cov-report html --cov=tipi_backend tests -k TestLimit
+```

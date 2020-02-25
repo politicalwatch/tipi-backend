@@ -3,6 +3,8 @@ import json
 import pcre
 import pytest
 import unittest
+import sys
+sys.path.append('/app')
 from parameterized import parameterized
 
 from tipi_backend.api.business import extract_labels_from_text

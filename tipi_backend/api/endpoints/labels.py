@@ -2,20 +2,23 @@ import logging
 
 from flask import request
 from flask_restplus import Namespace, Resource
-from werkzeug.contrib.cache import SimpleCache
 
-from tipi_backend.api.parsers import parser_labels
 from tipi_backend.api.business import extract_labels_from_text, get_tags
+from tipi_backend.api.endpoints import cache, limiter
+from tipi_backend.api.parsers import parser_labels
 
 
 log = logging.getLogger(__name__)
 
 ns = Namespace('labels', description='Operations related to label extraction')
-cache = SimpleCache()
+
 
 @ns.route('/extract')
 @ns.expect(parser_labels)
 class LabelsExtractor(Resource):
+    decorators = [
+        limiter.limit('10/hour', methods=['POST'])
+    ]
     def post(self):
         """Returns a dictionary of topics and tags matching the text."""
         cache_key = 'tags-for-labeling'

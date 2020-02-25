@@ -5,6 +5,7 @@ from flask_restplus import Namespace, Resource
 from mongoengine.queryset import DoesNotExist
 
 from tipi_backend.api.business import get_topics, get_topic
+from tipi_backend.api.endpoints import cache
 from tipi_backend.api.validators import validate_id_as_hash
 
 
@@ -16,6 +17,7 @@ ns = Namespace('topics', description='Operations related to topics')
 @ns.route('/')
 class TopicsCollection(Resource):
 
+    @cache.cached()
     def get(self):
         """Returns list of topics."""
         return get_topics()
