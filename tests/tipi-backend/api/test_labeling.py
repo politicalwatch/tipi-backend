@@ -7,7 +7,10 @@ import sys
 sys.path.append('/app')
 from parameterized import parameterized
 
-from tipi_backend.api.business import extract_labels_from_text
+from tipi_tasks import labeling
+from tipi_backend.api.endpoints import cache
+from tipi_backend.app import create_app
+from tipi_backend.settings import Config
 
 
 # Extract tags from topics

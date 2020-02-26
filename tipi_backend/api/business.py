@@ -5,7 +5,7 @@ import ast
 import pcre
 import logging
 
-import tipi_alerts
+import tipi_tasks
 
 from tipi_backend.database.models.topic import Topic
 from tipi_backend.database.schemas.topic import TopicSchema, TopicExtendedSchema
@@ -186,8 +186,8 @@ def save_alert(payload):
     Add init() before validate() to ensure it always use the same
     celery instance, despite flask multithrading
     '''
-    tipi_alerts.init()
-    tipi_alerts.validate.send_validation_emails.apply_async()
+    tipi_tasks.init()
+    tipi_tasks.validate.send_validation_emails.apply_async()
 
 def _add_search_to_alert(search, alert):
     now = datetime.now()
