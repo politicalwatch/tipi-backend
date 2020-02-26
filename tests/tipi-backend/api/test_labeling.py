@@ -37,8 +37,18 @@ for topic in topics:
                 'compiletag': pcre.compile('(?i)' + tag['regex'])
             })
 
+# initialize app
+Config.TESTING = True
+Config.USE_ALERTS = True
+Config.LABELING_MAX_WORD = 5001
+app = create_app(config=Config)
+cache.set(Config.CACHE_TAGS, TAGS, timeout=5*60)
+
 
 class TestLabeling(unittest.TestCase):
+
+    def setUp(self):
+        self.client = app.test_client()
 
     @parameterized.expand([
         ('w100.txt', {'ODS 16': ['Elusión y evasión fiscal']}),
@@ -52,41 +62,48 @@ class TestLabeling(unittest.TestCase):
             'ODS 7': ['Estrategia Española de Desarrollo Sostenible'],
         }),
         ('w2000.txt', {
-            'ODS 11': ['Zonas de bajas emisiones',
-                        'Electrificación de la movilidad',
-                        'Transporte público'],
+            'ODS 11': ['Electrificación de la movilidad', 'Transporte público'],
             'ODS 5': ['Ley 1/2004'],
             'ODS 7': ['Ley de transición energética', 'Gases combustibles',
                       'Fracking', 'Fractura hidráulica', 'Transición energética',
                       'Energía renovable, verde, alternativa y limpia',
                       'Energías renovables', 'Biocarburantes', 'IDAE',
-                      'Reducción de emisiones'],
+                      'Eficiencia energética'],
             'ODS 8': ['Eficiencia energética', 'Generación de empleo']
         }),
         ('w5000.txt', {
             'ODS 17': ['Remesas'],
-            'ODS 5': ['Discriminación por género', 'Igualdad de oportunidades',
-                      'Orientación sexual', 'Ley 1/2004', 'Natalidad'],
-            'ODS 8': ['Contratación de discapacitados', 'Desempleo', 'INEM',
-                      'Formación empresarial', 'Formación y empleo',
-                      'Edad de trabajar', 'Conciliacion laboral',
-                      'Conciliación mujer', 'Trabajadores de más edad', 'Pensiones'],
+            'ODS 5': ['Orientación sexual', 'Ley 1/2004', 'Natalidad'],
+            'ODS 8': ['Desempleo', 'INEM', 'Edad de trabajar',
+                      'Conciliacion laboral', 'Trabajadores de más edad',
+                      'Pensiones'],
         })
     ])
     def test_extract_tags(self, filename, expected_tags):
         with open('tests/tipi-backend/api/scanner_text/' + filename, 'r') as f:
             text = f.read()
-        result = extract_labels_from_text(text, TAGS)
-        assert 'topics' in result
-        assert 'tags' in result
+        res = self.client.post('/labels/extract', data={'text': text})
+        self.assertEqual(res.status_code, 200)
+        res_json = res.json
+        self.assertTrue('topics' in res_json)
+        self.assertTrue('tags' in res_json)
 
-        assert len(result['topics']) == len(expected_tags)
-        assert len(result['tags']) == len([v for vs in expected_tags.values() for v in vs])
+        print(res_json)
+        self.assertEqual(len(res_json['topics']), len(expected_tags))
+        self.assertEqual(len(res_json['tags']), len([v for vs in expected_tags.values() for v in vs]))
 
-        for res in result['tags']:
+        for res in res_json['tags']:
             topic = res.get('topic', '').split('-')[0].strip()
             tag = res.get('tag', '')
-            assert tag in expected_tags.get(topic, {})
+            print(topic, tag)
+            self.assertTrue(tag in expected_tags.get(topic, {}))
+
+    def test_labeling_num_words(self):
+        Config.LABELING_MAX_WORD = 10
+        text = "test " * 11
+        res = self.client.post('/labels/extract', data={'text': text})
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json.startswith(Config.TASK_LABELING_TEXT.split()[0]))
 
 
 if __name__ == '__main__':

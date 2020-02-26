@@ -7,6 +7,7 @@ import tipi_tasks
 from tipi_backend.api.business import get_tags
 from tipi_backend.api.endpoints import cache, limiter
 from tipi_backend.api.parsers import parser_labels
+from tipi_backend.settings import Config
 
 
 log = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class LabelsExtractor(Resource):
     ]
     def post(self):
         """Returns a dictionary of topics and tags matching the text."""
-        cache_key = 'tags-for-labeling'
+        cache_key = Config.CACHE_TAGS
         tags = cache.get(cache_key)
         if tags is None:
             tags = get_tags()
