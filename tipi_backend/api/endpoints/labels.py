@@ -1,4 +1,6 @@
+import codecs
 import logging
+import pickle
 
 from flask import request
 from flask_restplus import Namespace, Resource
@@ -21,6 +23,7 @@ class LabelsExtractor(Resource):
     decorators = [
         limiter.limit('10/hour', methods=['POST'])
     ]
+
     def post(self):
         """Returns a dictionary of topics and tags matching the text."""
         cache_key = Config.CACHE_TAGS
@@ -28,21 +31,19 @@ class LabelsExtractor(Resource):
         if tags is None:
             tags = get_tags()
             cache.set(cache_key, tags, timeout=5*60)
-
-        # Necessary because flask-caching add prefix for cache
-        cache_key = Config.CACHE.get('CACHE_KEY_PREFIX') + cache_key
+        tags = codecs.encode(pickle.dumps(tags), "base64").decode()
 
         tipi_tasks.init()
         text = request.form['text']
         text_length = len(text.split())
 
         if text_length >= Config.LABELING_MAX_WORD:
-            task = tipi_tasks.labeling.extract_labels_from_text.apply_async((text, None, cache_key))
+            task = tipi_tasks.labeling.extract_labels_from_text.apply_async((text, tags))
             eta_time = int((text_length / 1000) * 2)
-            task_id = task
+            task_id = task.id
             result = Config.TASK_LABELING_TEXT.format(task_id, eta_time)
         else:
-            result = tipi_tasks.labeling.extract_labels_from_text(text, tags=tags)
+            result = tipi_tasks.labeling.extract_labels_from_text(text, tags)
         return result
 
 
