@@ -10,8 +10,5 @@ setup(
     install_requires=[
         'flask',
         'flask-restplus',
-        'marshmallow',
-        'flask-mongoengine',
-        'marshmallow-mongoengine'
     ],
 )
