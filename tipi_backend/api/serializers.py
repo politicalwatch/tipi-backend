@@ -6,3 +6,9 @@ alert_model = api.model('alert', {
     'email': fields.String(required=True, description='User email to reveive alerts'),
     'search': fields.String(required=True, description='Serialized search')
 })
+
+scanned_model = api.model('scanned', {
+    'title': fields.String(required=True, description="Scanned document's title"),
+    'extract': fields.String(required=True, description="Scanned document's extract"),
+    'result': fields.String(required=True, description='Serialized result')
+})
