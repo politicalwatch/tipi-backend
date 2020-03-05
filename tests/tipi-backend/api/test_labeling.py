@@ -103,7 +103,7 @@ class TestLabeling(unittest.TestCase):
         text = "test " * 11
         res = self.client.post('/labels/extract', data={'text': text})
         self.assertEqual(res.status_code, 200)
-        self.assertTrue(res.json.startswith(Config.TASK_LABELING_TEXT.split()[0]))
+        self.assertTrue('task_id' in res.json)
 
 
 if __name__ == '__main__':

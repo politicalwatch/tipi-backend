@@ -41,7 +41,11 @@ class LabelsExtractor(Resource):
             task = tipi_tasks.labeling.extract_labels_from_text.apply_async((text, tags))
             eta_time = int((text_length / 1000) * 2)
             task_id = task.id
-            result = Config.TASK_LABELING_TEXT.format(task_id, eta_time)
+            result = {
+                    'status': 'PROCESSING',
+                    'task_id': task_id,
+                    'estimated_time': eta_time
+                    }
         else:
             result = tipi_tasks.labeling.extract_labels_from_text(text, tags)
         return result

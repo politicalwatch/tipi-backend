@@ -38,7 +38,3 @@ class Config:
     # App
     CACHE_TAGS = env.get('CACHE_TAGS', 'tags-for-labeling')
     LABELING_MAX_WORD = int(env.get('LABELING_MAX_WORD', '2500'))
-
-    text = "Etiquetando ... Su resultado será publicado en {}".format(SERVER_NAME)
-    text += "/labels/result/{}. Tiempo aproximado: {} segundos"
-    TASK_LABELING_TEXT = env.get('TASK_LABELING_TEXT', text)
