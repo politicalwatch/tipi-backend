@@ -146,6 +146,7 @@ def save_alert(payload):
     result = alert.save()
     if not result:
         raise Exception
+    return "La alerta fue creada satisfactoriamente"
 
     '''
     Add init() before validate() to ensure it always use the same

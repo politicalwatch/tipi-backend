@@ -25,7 +25,7 @@ class AlertCollection(Resource):
     def post(self):
         ''' Create a new alert '''
         try:
-            save_alert(ns.payload)
+            return save_alert(ns.payload), 201
         except Exception as e:
             abort(500)
 
