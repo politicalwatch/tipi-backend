@@ -154,8 +154,6 @@ def save_alert(payload):
     tipi_tasks.init()
     tipi_tasks.validate.send_validation_emails.apply_async()
 
-    return "La alerta fue creada satisfactoriamente"
-
 def _add_search_to_alert(search, alert):
     now = datetime.now()
     hash = generateId(alert.email, str(search), str(now))
