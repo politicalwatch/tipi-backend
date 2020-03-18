@@ -31,7 +31,7 @@ from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 """ TOPICS METHODS """
 
 def get_topics():
-    return TopicSchema(many=True).dump(Topic.objects())
+    return TopicSchema(many=True).dump(Topic.objects.natsorted())
 
 def get_topic(id):
     return TopicExtendedSchema().dump(Topic.objects.get(id=id))
