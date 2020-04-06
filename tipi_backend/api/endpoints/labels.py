@@ -1,55 +1,78 @@
+import codecs
 import logging
+import pickle
+import textract
+import tempfile
 
-from flask import request
-from flask_restplus import Namespace, Resource, abort
-from werkzeug.contrib.cache import SimpleCache
+from flask import request, abort
+from flask_restplus import Namespace, Resource
 
-from tipi_backend.api.parsers import parser_labels_from_text, parser_labels_from_file
-from tipi_backend.api.business import extract_labels_from_text, get_tags
+import tipi_tasks
+from tipi_backend.api.business import get_tags
+from tipi_backend.api.endpoints import cache, limiter
+from tipi_backend.api.parsers import parser_labels
+from tipi_backend.settings import Config
 
 
 log = logging.getLogger(__name__)
 
 ns = Namespace('labels', description='Operations related to label extraction')
-cache = SimpleCache()
 
+
+@ns.route('/extract')
+@ns.expect(parser_labels)
 class LabelsExtractor(Resource):
-    def load_tags(self):
-        cache_key = 'tags-for-labeling'
-        self.tags = cache.get(cache_key)
-        if self.tags is None:
-            self.tags = get_tags()
-            cache.set(cache_key, self.tags, timeout=5*60)
+    decorators = [
+        limiter.limit('10/hour', methods=['POST'])
+    ]
 
 
-@ns.route('/extract-from-text')
-@ns.expect(parser_labels_from_text)
-class LabelsExtractorFromText(LabelsExtractor):
     def post(self):
         """Returns a dictionary of topics and tags matching the text."""
-        self.load_tags()
-        return extract_labels_from_text(
-            request.form['text'],
-            self.tags
-        )
+        try:
+            cache_key = Config.CACHE_TAGS
+            tags = cache.get(cache_key)
+            if tags is None:
+                tags = get_tags()
+                cache.set(cache_key, tags, timeout=5*60)
+            tags = codecs.encode(pickle.dumps(tags), "base64").decode()
+            tipi_tasks.init()
+            text = ''
+            if 'text' in request.form and request.form['text']:
+                text = request.form['text']
+            else:
+                if 'file' in request.files:
+                    file_input = request.files['file']
+                    with tempfile.NamedTemporaryFile(prefix='tipiscanner_', suffix='.'+file_input.filename.split('.')[-1]) as f:
+                        f.write(file_input.stream.read())
+                        text = textract.process(f.name).decode('utf-8').strip()
+                        f.close()
+                    if not text:
+                        abort(400, "Error al obtener el texto del fichero proporcionado. Pruebe con otro fichero.")
+            text_length = len(text.split())
+
+            if text_length >= Config.LABELING_MAX_WORD:
+                task = tipi_tasks.labeling.extract_labels_from_text.apply_async((text, tags))
+                eta_time = int((text_length / 1000) * 2)
+                task_id = task.id
+                result = {
+                        'status': 'PROCESSING',
+                        'task_id': task_id,
+                        'estimated_time': eta_time
+                        }
+            else:
+                result = tipi_tasks.labeling.extract_labels_from_text(text, tags)
+            return result
+        except Exception as e:
+            abort(e.code, e.description)
 
 
-@ns.route('/extract-from-file')
-@ns.expect(parser_labels_from_file)
-class LabelsExtractorFromFile(LabelsExtractor):
-    def post(self):
-        """Returns a dictionary of topics and tags matching the file content."""
-        text = ''
-        self.load_tags()
-        file_to_process = request.files['file']
-        '''
-        INSTALL TEXTRACT
-        '''
-        if file_to_process.content_type == 'text/plain':
-            text = ''.join(str(file_to_process.stream.readlines()))
-        else:
-            abort(400, message='Not a valid filetype')
-        return extract_labels_from_text(
-            text,
-            self.tags
-        )
+@ns.route('/result/<id>')
+@ns.param(name='id', description='Task id', type=str, required=True, location=['path'], help='Invalid identifier')
+@ns.response(404, 'Task not found.')
+class LabelResult(Resource):
+
+    def get(self, id):
+        """Returns result of a labeling."""
+        tipi_tasks.init()
+        return tipi_tasks.labeling.check_status_task(id)

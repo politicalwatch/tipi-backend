@@ -1,7 +1,6 @@
+from os import environ as env
 from flask import Blueprint, render_template 
-
-from tipi_backend.database.models.alert import Alert, Search
-from tipi_backend import settings
+from tipi_data.models.alert import Alert, Search
 
 
 alerts_by_email_blueprint = Blueprint('manage_alerts_by_email', __name__)
@@ -9,7 +8,7 @@ alerts_by_email_blueprint = Blueprint('manage_alerts_by_email', __name__)
 def custom_render_template(template):
     return render_template(
             template,
-            name=settings.NAME
+            name=env.get('NAME', 'test')
             )
 
 

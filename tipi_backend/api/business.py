@@ -1,31 +1,37 @@
 from datetime import datetime
+from os import environ as env
 import json
+import ast
 import pcre
+import logging
 
-import tipi_alerts
+import tipi_tasks
 
-from tipi_backend.database.models.topic import Topic
-from tipi_backend.database.schemas.topic import TopicSchema, TopicExtendedSchema
-from tipi_backend.database.models.deputy import Deputy
-from tipi_backend.database.schemas.deputy import DeputySchema, DeputyExtendedSchema
-from tipi_backend.database.models.parliamentarygroup import ParliamentaryGroup
-from tipi_backend.database.schemas.parliamentarygroup import ParliamentaryGroupSchema
-from tipi_backend.database.models.initiative import Initiative
-from tipi_backend.database.models.alert import Alert, Search
-from tipi_backend.database.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
-from tipi_backend.database.models.place import Place
-from tipi_backend.database.schemas.place import PlaceSchema
+from tipi_data.models.topic import Topic
+from tipi_data.schemas.topic import TopicSchema, TopicExtendedSchema
+from tipi_data.models.deputy import Deputy
+from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
+from tipi_data.models.parliamentarygroup import ParliamentaryGroup
+from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
+from tipi_data.models.initiative import Initiative
+from tipi_data.models.alert import Alert, Search
+from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
+from tipi_data.models.place import Place
+from tipi_data.schemas.place import PlaceSchema
+from tipi_data.models.stats import Stats
+from tipi_data.models.scanned import Scanned
+from tipi_data.schemas.scanned import ScannedSchema
+from tipi_data.utils import generateId
+
 from tipi_backend.api.parsers import SearchInitiativeParser
 from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
 from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
-from tipi_backend.database.models.stats import Stats
-from tipi_backend.database.common import generateId
 
 
 """ TOPICS METHODS """
 
 def get_topics():
-    return TopicSchema(many=True).dump(Topic.objects())
+    return TopicSchema(many=True).dump(Topic.objects.natsorted())
 
 def get_topic(id):
     return TopicExtendedSchema().dump(Topic.objects.get(id=id))
@@ -115,36 +121,6 @@ def get_places_stats(params):
 def get_tags():
     return Topic.get_tags()
 
-def __append_tag_to_founds(tags_found, new_tag):
-    found = False
-    for tag in tags_found:
-        if tag['topic'] == new_tag['topic'] \
-                and tag['subtopic'] == new_tag['subtopic'] \
-                and tag['tag'] == new_tag['tag']:
-                    found = True
-                    tag['times'] = tag['times'] + new_tag['times']
-                    break
-    if not found:
-        tags_found.append(new_tag)
-
-
-def extract_labels_from_text(text, tags):
-    tags_found = []
-    for line in text.splitlines():
-        for tag in tags:
-            result = pcre.findall(tag['compiletag'], line)
-            times = len(result)
-            if times > 0:
-                tag_copy = tag.copy()
-                tag_copy.pop('compiletag')
-                tag_copy['times'] = times
-                __append_tag_to_founds(tags_found, tag_copy)
-
-    return {
-        'topics': sorted(list(set([tag['topic'] for tag in tags_found]))),
-        'tags': sorted(tags_found, key=lambda t: (t['topic'], t['subtopic'], t['tag'])),
-    }
-
 
 """ ALERTS METHODS """
 
@@ -175,8 +151,8 @@ def save_alert(payload):
     Add init() before validate() to ensure it always use the same
     celery instance, despite flask multithrading
     '''
-    tipi_alerts.init()
-    tipi_alerts.validate.send_validation_emails.apply_async()
+    tipi_tasks.init()
+    tipi_tasks.validate.send_validation_emails.apply_async()
 
 def _add_search_to_alert(search, alert):
     now = datetime.now()
@@ -192,3 +168,26 @@ def _add_search_to_alert(search, alert):
         created=now
         )
     )
+
+
+''' SCANNED METHODS '''
+
+def get_scanned(id):
+    return ScannedSchema().dump(Scanned.objects.get(id=id))
+
+def save_scanned(payload):
+    scanned = Scanned(
+            id=generateId(payload['title'], payload['extract'], str(datetime.now())),
+            title=payload['title'],
+            extract=payload['extract'],
+            result=ast.literal_eval(payload['result']),
+            created=datetime.now()
+            )
+    saved = scanned.save()
+    if not saved:
+        raise Exception
+    return {
+            'id': scanned.id,
+            'title': scanned.title,
+            'extract': scanned.extract,
+            }
