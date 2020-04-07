@@ -177,9 +177,9 @@ def get_scanned(id):
 
 def save_scanned(payload):
     scanned = Scanned(
-            id=generateId(payload['title'], payload['extract'], str(datetime.now())),
+            id=generateId(payload['title'], payload['excerpt'], str(datetime.now())),
             title=payload['title'],
-            extract=payload['extract'],
+            excerpt=payload['excerpt'],
             result=ast.literal_eval(payload['result']),
             created=datetime.now()
             )
@@ -189,5 +189,5 @@ def save_scanned(payload):
     return {
             'id': scanned.id,
             'title': scanned.title,
-            'extract': scanned.extract,
+            'excerpt': scanned.excerpt,
             }
