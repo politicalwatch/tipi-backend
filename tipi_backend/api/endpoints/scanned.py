@@ -5,6 +5,7 @@ from flask import request, abort
 from flask_restplus import Namespace, Resource, fields
 
 from tipi_backend.api.business import save_scanned, get_scanned
+from tipi_backend.api.endpoints import limiter
 from tipi_backend.api.serializers import scanned_model
 from tipi_backend.api.validators import validate_id_as_hash
 
@@ -16,6 +17,9 @@ ns = Namespace('scanned', description='Operations related to scanned documents')
 @ns.route('/')
 @ns.doc(False)
 class ScannedCollection(Resource):
+    decorators = [
+        limiter.limit('10/hour', methods=['POST'])
+    ]
 
     @ns.expect(scanned_model)
     @ns.response(201, 'Scanned successfully created.')
