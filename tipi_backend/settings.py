@@ -36,5 +36,6 @@ class Config:
     }
 
     # App
+    MAX_CONTENT_LENGTH = eval(env.get('MAX_CONTENT_LENGTH', '20*1024*1024'))
     CACHE_TAGS = env.get('CACHE_TAGS', 'tags-for-labeling')
     LABELING_MAX_WORD = int(env.get('LABELING_MAX_WORD', '2500'))
