@@ -1,7 +1,8 @@
 import codecs
 import logging
 import pickle
-import textract
+from textract import process
+from os.path import splitext
 import tempfile
 
 from flask import request, abort
@@ -43,9 +44,9 @@ class LabelsExtractor(Resource):
             else:
                 if 'file' in request.files:
                     file_input = request.files['file']
-                    with tempfile.NamedTemporaryFile(prefix='tipiscanner_', suffix='.'+file_input.filename.split('.')[-1]) as f:
+                    with tempfile.NamedTemporaryFile(prefix='tipiscanner_', suffix=splitext(file_input.filename)[1]) as f:
                         f.write(file_input.stream.read())
-                        text = textract.process(f.name).decode('utf-8').strip()
+                        text = process(f.name).decode('utf-8').strip()
                         f.close()
                     if not text:
                         abort(400, "Error al obtener el texto del fichero proporcionado. Pruebe con otro fichero.")
