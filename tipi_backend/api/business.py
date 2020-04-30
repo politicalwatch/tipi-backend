@@ -21,7 +21,7 @@ from tipi_data.schemas.place import PlaceSchema
 from tipi_data.models.stats import Stats
 from tipi_data.models.scanned import Scanned
 from tipi_data.schemas.scanned import ScannedSchema
-from tipi_data.utils import generateId
+from tipi_data.utils import generate_id
 
 from tipi_backend.api.parsers import SearchInitiativeParser
 from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
@@ -128,7 +128,7 @@ def save_alert(payload):
     alert = Alert.objects(email=payload['email']).first()
     if not alert:
         alert = Alert(
-                id=generateId(payload['email']),
+                id=generate_id(payload['email']),
                 email=payload['email']
                 )
         _add_search_to_alert(payload['search'], alert)
@@ -156,7 +156,7 @@ def save_alert(payload):
 
 def _add_search_to_alert(search, alert):
     now = datetime.now()
-    hash = generateId(alert.email, str(search), str(now))
+    hash = generate_id(alert.email, str(search), str(now))
     alert.searches.append(Search(
         hash=hash,
         search=search,
@@ -177,7 +177,7 @@ def get_scanned(id):
 
 def save_scanned(payload):
     scanned = Scanned(
-            id=generateId(payload['title'], payload['excerpt'], str(datetime.now())),
+            id=generate_id(payload['title'], payload['excerpt'], str(datetime.now())),
             title=payload['title'],
             excerpt=payload['excerpt'],
             result=ast.literal_eval(payload['result']),
