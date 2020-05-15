@@ -6,7 +6,6 @@ from flask_restplus import Namespace, Resource, fields
 
 from tipi_backend.api.business import save_scanned, get_scanned
 from tipi_backend.api.serializers import scanned_model
-from tipi_backend.api.validators import validate_id_as_hash
 
 
 log = logging.getLogger(__name__)
@@ -32,7 +31,6 @@ class ScannedCollection(Resource):
 @ns.response(404, 'Scanned not found.')
 class ScannedItem(Resource):
 
-    @validate_id_as_hash
     def get(self, id):
         """Returns details of a scanned document."""
         return get_scanned(id)

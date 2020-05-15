@@ -5,7 +5,6 @@ from flask_restplus import Namespace, Resource
 
 from tipi_backend.api.business import get_topics, get_topic
 from tipi_backend.api.endpoints import cache
-from tipi_backend.api.validators import validate_id_as_hash
 
 
 log = logging.getLogger(__name__)
@@ -27,7 +26,6 @@ class TopicsCollection(Resource):
 @ns.response(404, 'Topic not found.')
 class TopicItem(Resource):
 
-    @validate_id_as_hash
     def get(self, id):
         """Returns details of a topic."""
         return get_topic(id)
