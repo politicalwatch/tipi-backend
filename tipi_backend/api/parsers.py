@@ -36,9 +36,9 @@ parser_authors = reqparse.RequestParser()
 parser_authors.add_argument('name', type=str, location='args', help='Send a name')
 
 
-parser_labels = reqparse.RequestParser()
-parser_labels.add_argument(name='text', type=str, location='form', help='Text to be processed (PREFERENCE)')
-parser_labels.add_argument(name='file', location='files', help='File to be processed')
+parser_tagger = reqparse.RequestParser()
+parser_tagger.add_argument(name='text', type=str, location='form', help='Text to be processed (PREFERENCE)')
+parser_tagger.add_argument(name='file', location='files', help='File to be processed')
 
 class SearchInitiativeParser:
 

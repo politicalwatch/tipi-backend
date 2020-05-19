@@ -116,7 +116,7 @@ def get_places_stats(params):
     return _get_subdoc_stats(stats, 'placesByTopics', params['topic'], 'places')
 
 
-""" LABEL EXTRACTOR METHODS """
+""" TAGGER METHODS """
 
 def get_tags():
     return Topic.get_tags()
