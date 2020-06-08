@@ -7,7 +7,6 @@ from tipi_data.models.searches_tracker import SearchesTracker
 
 from tipi_backend.api.parsers import parser_initiative
 from tipi_backend.api.business import search_initiatives, get_initiative
-from tipi_backend.api.validators import validate_id_as_hash
 
 
 log = logging.getLogger(__name__)
@@ -42,7 +41,6 @@ class InitiativesCollection(Resource):
 @ns.response(404, 'Initiative not found.')
 class InitiativeItem(Resource):
 
-    @validate_id_as_hash
     def get(self, id):
         """Returns details of an initiative."""
         return get_initiative(id)

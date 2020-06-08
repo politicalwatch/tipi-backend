@@ -5,7 +5,6 @@ from flask_restplus import Namespace, Resource
 
 from tipi_backend.api.parsers import parser_authors
 from tipi_backend.api.business import get_deputies, get_deputy
-from tipi_backend.api.validators import validate_id_as_hash
 
 
 log = logging.getLogger(__name__)
@@ -28,7 +27,6 @@ class DeputiesCollection(Resource):
 @ns.response(404, 'Deputy not found.')
 class DeputyItem(Resource):
 
-    @validate_id_as_hash
     def get(self, id):
         """Returns details of a deputy."""
         return get_deputy(id)
