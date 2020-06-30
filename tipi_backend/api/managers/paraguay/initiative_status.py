@@ -7,8 +7,8 @@ class InitiativeStatusManager():
                 'COMUNICADO',
                 'CONTESTADO',
                 'CONTESTADO PARCIALMENTE',
-                'RETIRADO ',
                 'ARCHIVADO',
+                'RETIRADO ',
                 'NO CONTESTADO',
                 'SUSPENDIDO POR FALTA DE TRÁMITE',
                 ]
