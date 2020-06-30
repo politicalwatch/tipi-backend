@@ -1,10 +1,11 @@
 import re
 import datetime
+from importlib import import_module as im
 
 from flask_restplus import reqparse
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
 
-from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
+from tipi_backend.settings import Config
 from tipi_backend.api.validators import validate_date
 
 
@@ -55,7 +56,8 @@ class SearchInitiativeParser:
     class TypeFieldParser():
         @staticmethod
         def get_search_for(key, value):
-            return InitiativeTypeManager().get_search_for(value)
+            itm = im('tipi_backend.api.managers.{}.initiative_type'.format(Config.COUNTRY))
+            return itm.InitiativeTypeManager().get_search_for(value)
 
     class TopicFieldParser():
         @staticmethod

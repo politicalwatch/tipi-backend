@@ -4,6 +4,7 @@ import json
 import ast
 import pcre
 import logging
+from importlib import import_module as im
 
 import tipi_tasks
 
@@ -23,9 +24,8 @@ from tipi_data.models.scanned import Scanned
 from tipi_data.schemas.scanned import ScannedSchema
 from tipi_data.utils import generate_id
 
+from tipi_backend.settings import Config
 from tipi_backend.api.parsers import SearchInitiativeParser
-from tipi_backend.api.managers.initiative_status import InitiativeStatusManager
-from tipi_backend.api.managers.initiative_type import InitiativeTypeManager
 
 
 """ TOPICS METHODS """
@@ -76,10 +76,12 @@ def get_places():
     return PlaceSchema(many=True).dump(Place.objects())
 
 def get_initiative_types():
-    return InitiativeTypeManager().get_values()
+    itm = im('tipi_backend.api.managers.{}.initiative_type'.format(Config.COUNTRY))
+    return itm.InitiativeTypeManager().get_values()
 
 def get_initiative_status():
-    return InitiativeStatusManager().get_values()
+    ism = im('tipi_backend.api.managers.{}.initiative_status'.format(Config.COUNTRY))
+    return ism.InitiativeStatusManager().get_values()
 
 
 """ STATS METHODS """
