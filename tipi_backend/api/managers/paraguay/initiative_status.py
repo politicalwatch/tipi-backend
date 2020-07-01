@@ -2,7 +2,7 @@ class InitiativeStatusManager():
 
     def __init__(self):
         self.all_status = [
-                'EN TRÁMITE',
+                'EN TRAMITE',
                 'PUBLICADO',
                 'COMUNICADO',
                 'CONTESTADO',
