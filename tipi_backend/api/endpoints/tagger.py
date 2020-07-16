@@ -54,7 +54,7 @@ class TaggerExtractor(Resource):
 
             if text_length >= Config.TAGGER_MAX_WORDS:
                 task = tipi_tasks.tagger.extract_tags_from_text.apply_async((text, tags))
-                eta_time = int((text_length / 1000) * 8)
+                eta_time = int((text_length / 1000) * 4)
                 task_id = task.id
                 result = {
                         'status': 'PROCESSING',
