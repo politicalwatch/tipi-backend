@@ -24,7 +24,7 @@ ns = Namespace('tagger', description='Operations related to tag texts using our 
 @ns.expect(parser_tagger)
 class TaggerExtractor(Resource):
     decorators = [
-        limiter.limit('10/hour', methods=['POST'])
+        limiter.limit('100/hour', methods=['POST'])
     ]
 
 
