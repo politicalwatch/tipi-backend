@@ -65,7 +65,10 @@ class TaggerExtractor(Resource):
                 result = tipi_tasks.tagger.extract_tags_from_text(text, tags)
             return result
         except Exception as e:
-            abort(e.code, e.description)
+            if hasattr(e, 'code') and hasattr(e, 'description'):
+                abort(e.code, e.description)
+            else:
+                abort(500, "Internal server error")
 
 
 @ns.route('/result/<id>')
