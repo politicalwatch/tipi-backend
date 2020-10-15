@@ -197,8 +197,8 @@ def save_scanned(payload):
     if not saved:
         raise Exception
     return {
-            'id': scanned.id,
-            'title': scanned.title,
-            'excerpt': scanned.excerpt,
-            'expiration': scanned.expiration
-            }
+        'id': scanned.id,
+        'title': scanned.title,
+        'excerpt': scanned.excerpt,
+        'expiration': str(scanned.expiration)
+    }
