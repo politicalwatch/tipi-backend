@@ -9,6 +9,7 @@ alert_model = api.model('alert', {
 
 scanned_model = api.model('scanned', {
     'title': fields.String(required=True, description="Scanned document's title"),
+    'expiration': fields.String(required=False, description="Scanned document's expiration date"),
     'excerpt': fields.String(required=True, description="Scanned document's excerpt"),
     'result': fields.String(required=True, description='Serialized result')
 })

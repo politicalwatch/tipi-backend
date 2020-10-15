@@ -185,13 +185,14 @@ def save_scanned(payload):
     expiration = time.mktime(datetime.now().timetuple()) + (oneMonthInSeconds * expiration_options.get(payload.get('expiration', '1m')))
 
     scanned = Scanned(
-            id=generate_id(payload['title'], payload['excerpt'], str(datetime.now())),
-            title=payload['title'],
-            excerpt=payload['excerpt'],
-            result=ast.literal_eval(payload['result']),
-            created=datetime.now(),
-            expiration=expiration
-            )
+        id=generate_id(payload['title'], payload['excerpt'], str(datetime.now())),
+        title=payload['title'],
+        excerpt=payload['excerpt'],
+        result=ast.literal_eval(payload['result']),
+        created=datetime.now(),
+        expiration=datetime.fromtimestamp(expiration)
+    )
+
     saved = scanned.save()
     if not saved:
         raise Exception
@@ -199,4 +200,5 @@ def save_scanned(payload):
             'id': scanned.id,
             'title': scanned.title,
             'excerpt': scanned.excerpt,
+            'expiration': scanned.expiration
             }
