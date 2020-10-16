@@ -175,14 +175,14 @@ def get_scanned(id):
     return ScannedSchema().dump(Scanned.objects.get(id=id))
 
 def save_scanned(payload):
-    expiration_options = {
+    EXPIRATION_OPTIONS = {
         '1m': 1,
         '3m': 3,
         '1y': 12
     }
     ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30
 
-    expiration = time.mktime(datetime.now().timetuple()) + (ONE_MONTH_IN_SECONDS * expiration_options.get(payload.get('expiration', '1m')))
+    expiration = time.mktime(datetime.now().timetuple()) + (ONE_MONTH_IN_SECONDS * EXPIRATION_OPTIONS.get(payload.get('expiration', '1m')))
 
     scanned = Scanned(
         id=generate_id(payload['title'], payload['excerpt'], str(datetime.now())),
