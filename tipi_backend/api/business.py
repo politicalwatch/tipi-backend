@@ -180,9 +180,9 @@ def save_scanned(payload):
         '3m': 3,
         '1y': 12
     }
-    oneMonthInSeconds = 60 * 60 * 24 * 30
+    ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30
 
-    expiration = time.mktime(datetime.now().timetuple()) + (oneMonthInSeconds * expiration_options.get(payload.get('expiration', '1m')))
+    expiration = time.mktime(datetime.now().timetuple()) + (ONE_MONTH_IN_SECONDS * expiration_options.get(payload.get('expiration', '1m')))
 
     scanned = Scanned(
         id=generate_id(payload['title'], payload['excerpt'], str(datetime.now())),
