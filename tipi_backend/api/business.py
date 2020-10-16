@@ -190,7 +190,8 @@ def save_scanned(payload):
         excerpt=payload['excerpt'],
         result=ast.literal_eval(payload['result']),
         created=datetime.now(),
-        expiration=datetime.fromtimestamp(expiration)
+        expiration=datetime.fromtimestamp(expiration),
+        verified=payload['verified']
     )
 
     saved = scanned.save()
