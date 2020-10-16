@@ -4,6 +4,7 @@ import json
 import ast
 import pcre
 import logging
+import time
 from importlib import import_module as im
 
 import tipi_tasks
@@ -174,18 +175,30 @@ def get_scanned(id):
     return ScannedSchema().dump(Scanned.objects.get(id=id))
 
 def save_scanned(payload):
+    EXPIRATION_OPTIONS = {
+        '1m': 1,
+        '3m': 3,
+        '1y': 12
+    }
+    ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30
+
+    expiration = time.mktime(datetime.now().timetuple()) + (ONE_MONTH_IN_SECONDS * EXPIRATION_OPTIONS.get(payload.get('expiration', '1m')))
+
     scanned = Scanned(
-            id=generate_id(payload['title'], payload['excerpt'], str(datetime.now())),
-            title=payload['title'],
-            excerpt=payload['excerpt'],
-            result=ast.literal_eval(payload['result']),
-            created=datetime.now()
-            )
+        id=generate_id(payload['title'], payload['excerpt'], str(datetime.now())),
+        title=payload['title'],
+        excerpt=payload['excerpt'],
+        result=ast.literal_eval(payload['result']),
+        created=datetime.now(),
+        expiration=datetime.fromtimestamp(expiration)
+    )
+
     saved = scanned.save()
     if not saved:
         raise Exception
     return {
-            'id': scanned.id,
-            'title': scanned.title,
-            'excerpt': scanned.excerpt,
-            }
+        'id': scanned.id,
+        'title': scanned.title,
+        'excerpt': scanned.excerpt,
+        'expiration': str(scanned.expiration)
+    }
