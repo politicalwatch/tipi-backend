@@ -22,6 +22,7 @@ from tipi_backend.api.endpoints.stats import ns as stats_namespace
 from tipi_backend.api.endpoints.tagger import ns as tagger_namespace
 from tipi_backend.api.endpoints.alerts import ns as alerts_namespace
 from tipi_backend.api.endpoints.scanned import ns as scanned_namespace
+from tipi_backend.api.endpoints.image_proxy import ns as proxy_namespace
 from tipi_backend.api.restplus import api
 
 
@@ -58,7 +59,8 @@ def add_namespaces(app):
                   initiativestatus_namespace,
                   stats_namespace,
                   tagger_namespace,
-                  scanned_namespace
+                  scanned_namespace,
+                  proxy_namespace
     ]
     if Config.USE_ALERTS:
         namespaces.append(alerts_namespace)
