@@ -4,7 +4,7 @@ import json
 from flask import request, abort
 from flask_restplus import Namespace, Resource, fields
 
-from tipi_backend.api.business import save_scanned, get_scanned, search_scanned
+from tipi_backend.api.business import save_scanned, get_scanned, search_verified_scanned
 from tipi_backend.api.endpoints import limiter
 from tipi_backend.api.serializers import scanned_model
 
