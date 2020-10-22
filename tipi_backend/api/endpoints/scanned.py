@@ -4,7 +4,7 @@ import json
 from flask import request, abort
 from flask_restplus import Namespace, Resource, fields
 
-from tipi_backend.api.business import save_scanned, get_scanned
+from tipi_backend.api.business import save_scanned, get_scanned, search_scanned
 from tipi_backend.api.endpoints import limiter
 from tipi_backend.api.serializers import scanned_model
 
@@ -38,3 +38,13 @@ class ScannedItem(Resource):
     def get(self, id):
         """Returns details of a scanned document."""
         return get_scanned(id)
+
+@ns.route('/search/<query>')
+@ns.doc(False)
+@ns.param(name='query', description='Search query', type=str, required=True, location=['path'])
+@ns.response(404, 'Results not found.')
+class SearchScanned(Resource):
+
+    def get(self, query):
+        """Returns list of verified scanned documents"""
+        return search_scanned(query)

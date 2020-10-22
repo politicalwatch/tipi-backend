@@ -5,6 +5,7 @@ import ast
 import pcre
 import logging
 import time
+import re
 from importlib import import_module as im
 
 import tipi_tasks
@@ -203,3 +204,8 @@ def save_scanned(payload):
         'excerpt': scanned.excerpt,
         'expiration': str(scanned.expiration)
     }
+
+def search_scanned(query):
+    documents = Scanned.objects.filter(title=re.compile(query, re.IGNORECASE), verified=False)
+
+    return ScannedSchema(many=True).dump(documents)
