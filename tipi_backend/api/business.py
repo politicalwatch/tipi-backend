@@ -205,7 +205,7 @@ def save_scanned(payload):
         'expiration': str(scanned.expiration)
     }
 
-def search_scanned(query):
-    documents = Scanned.objects.filter(title=re.compile(query, re.IGNORECASE), verified=False)
+def search_verified_scanned(query):
+    documents = Scanned.objects.filter(title=re.compile(query, re.IGNORECASE), verified=True)
 
     return ScannedSchema(many=True).dump(documents)

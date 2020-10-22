@@ -47,4 +47,4 @@ class SearchScanned(Resource):
 
     def get(self, query):
         """Returns list of verified scanned documents"""
-        return search_scanned(query)
+        return search_verified_scanned(query)
