@@ -23,10 +23,6 @@ ns = Namespace('tagger', description='Operations related to tag texts using our 
 @ns.route('/')
 @ns.expect(parser_tagger)
 class TaggerExtractor(Resource):
-    decorators = [
-        limiter.limit('100/hour', methods=['POST'])
-    ]
-
 
     def post(self):
         """Returns a list of topics and tags matching the text."""
