@@ -45,7 +45,7 @@ class InitiativeItem(Resource):
         """Returns details of an initiative."""
         return get_initiative(id)
 
-@ns.route('/content/<id>')
+@ns.route('/<id>/content')
 @ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
 @ns.response(404, 'Initiative not found.')
 class InitiativeItem(Resource):
