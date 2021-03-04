@@ -17,8 +17,10 @@ from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
 from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
 from tipi_data.models.initiative import Initiative
+from tipi_data.models.initiative_type import InitiativeType
 from tipi_data.models.alert import Alert, Search
 from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
+from tipi_data.schemas.initiative_type import InitiativeTypeSchema
 from tipi_data.models.place import Place
 from tipi_data.schemas.place import PlaceSchema
 from tipi_data.models.stats import Stats
@@ -78,8 +80,7 @@ def get_places():
     return PlaceSchema(many=True).dump(Place.objects())
 
 def get_initiative_types():
-    itm = im('tipi_backend.api.managers.{}.initiative_type'.format(Config.COUNTRY))
-    return itm.InitiativeTypeManager().get_values()
+    return InitiativeTypeSchema(many=True).dump(InitiativeType.objects())
 
 def get_initiative_status():
     ism = im('tipi_backend.api.managers.{}.initiative_status'.format(Config.COUNTRY))

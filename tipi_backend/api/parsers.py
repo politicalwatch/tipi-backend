@@ -56,8 +56,7 @@ class SearchInitiativeParser:
     class TypeFieldParser():
         @staticmethod
         def get_search_for(key, value):
-            itm = im('tipi_backend.api.managers.{}.initiative_type'.format(Config.COUNTRY))
-            return itm.InitiativeTypeManager().get_search_for(value)
+            return {'initiative_type': value}
 
     class TopicFieldParser():
         @staticmethod
