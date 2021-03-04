@@ -19,7 +19,7 @@ from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
 from tipi_data.models.initiative import Initiative
 from tipi_data.models.initiative_type import InitiativeType
 from tipi_data.models.alert import Alert, Search
-from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
+from tipi_data.schemas.initiative import InitiativeSchema, InitiativeContentSchema, InitiativeExtendedSchema
 from tipi_data.schemas.initiative_type import InitiativeTypeSchema
 from tipi_data.models.place import Place
 from tipi_data.schemas.place import PlaceSchema
@@ -75,6 +75,9 @@ def search_initiatives(params):
 
 def get_initiative(id):
     return InitiativeExtendedSchema().dump(Initiative.objects.get(id=id))
+
+def get_content_initiative(id):
+    return InitiativeContentSchema().dump(Initiative.objects.get(id=id))
 
 def get_places():
     return PlaceSchema(many=True).dump(Place.objects())

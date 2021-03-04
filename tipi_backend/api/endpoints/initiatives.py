@@ -6,7 +6,7 @@ from flask_restplus import Namespace, Resource
 from tipi_data.models.searches_tracker import SearchesTracker
 
 from tipi_backend.api.parsers import parser_initiative
-from tipi_backend.api.business import search_initiatives, get_initiative
+from tipi_backend.api.business import search_initiatives, get_content_initiative, get_initiative
 
 
 log = logging.getLogger(__name__)
@@ -44,3 +44,12 @@ class InitiativeItem(Resource):
     def get(self, id):
         """Returns details of an initiative."""
         return get_initiative(id)
+
+@ns.route('/content/<id>')
+@ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
+@ns.response(404, 'Initiative not found.')
+class InitiativeItem(Resource):
+
+    def get(self, id):
+        """Returns details of an initiative."""
+        return get_content_initiative(id)
