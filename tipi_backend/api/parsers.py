@@ -1,11 +1,9 @@
-import re
 import datetime
-from importlib import import_module as im
 
 from flask_restplus import reqparse
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
+from tipi_data.models.initiative_type import InitiativeType
 
-from tipi_backend.settings import Config
 from tipi_backend.api.validators import validate_date
 
 
@@ -56,7 +54,11 @@ class SearchInitiativeParser:
     class TypeFieldParser():
         @staticmethod
         def get_search_for(key, value):
-            return {'initiative_type': value}
+            try:
+                code = InitiativeType.objects.get(name=value)['id']
+            except Exception:
+                code = ''
+            return {'initiative_type': code}
 
     class TopicFieldParser():
         @staticmethod
@@ -70,9 +72,9 @@ class SearchInitiativeParser:
                 return {}
             elem_match = dict()
             if len(value['tags']):
-                elem_match.update({ 'tag': {'$in': value['tags']} })
+                elem_match.update({'tag': {'$in': value['tags']}})
             if len(value['subtopics']):
-                elem_match.update({ 'subtopic': {'$in': value['subtopics']} })
+                elem_match.update({'subtopic': {'$in': value['subtopics']}})
             return {'tags': {'$elemMatch': elem_match}}
 
     class AuthorFieldParser():
@@ -92,18 +94,18 @@ class SearchInitiativeParser:
         def get_search_for(key, value):
             def parse_date(str_date):
                 array_date = str_date.split('-')
-                return datetime.datetime(int(array_date[0]), int(array_date[1]), int(array_date[2]), 0,0,0,0)
+                return datetime.datetime(int(array_date[0]), int(array_date[1]), int(array_date[2]), 0, 0, 0, 0)
 
             date_interval = value.split('_')
             STARTDATE = 0
             ENDDATE = 1
-            if date_interval[STARTDATE] is '' and date_interval[ENDDATE] is '':
+            if date_interval[STARTDATE] == '' and date_interval[ENDDATE] == '':
                 return {}
             date_query = {'updated': {}}
-            if date_interval[STARTDATE] is not '':
+            if date_interval[STARTDATE] != '':
                 if validate_date(date_interval[STARTDATE]):
                     date_query['updated']['$gte'] = parse_date(date_interval[STARTDATE])
-            if date_interval[ENDDATE] is not '':
+            if date_interval[ENDDATE] != '':
                 if validate_date(date_interval[ENDDATE]):
                     date_query['updated']['$lte'] = parse_date(date_interval[ENDDATE])
             return date_query
@@ -156,8 +158,8 @@ class SearchInitiativeParser:
             del self._params[attrname]
 
     def _join_tags_and_subtopics_in_params(self):
-        tags = [] if not 'tags' in self._params else self._params['tags']
-        subtopics = [] if not 'subtopics' in self._params else self._params['subtopics']
+        tags = [] if 'tags' not in self._params else self._params['tags']
+        subtopics = [] if 'subtopics' not in self._params else self._params['subtopics']
         self._clean_params_for_attr('tags')
         self._clean_params_for_attr('subtopics')
         self._params['tags'] = {
@@ -166,9 +168,9 @@ class SearchInitiativeParser:
                 }
 
     def _join_dates_in_params(self):
-        if not 'startdate' in self._params:
+        if 'startdate' not in self._params:
             self._params['startdate'] = ''
-        if not 'enddate' in self._params:
+        if 'enddate' not in self._params:
             self._params['enddate'] = ''
         self._params['date'] = "{}_{}".format(
                 self._params['startdate'],
@@ -176,7 +178,6 @@ class SearchInitiativeParser:
                 )
         self._clean_params_for_attr('startdate')
         self._clean_params_for_attr('enddate')
-
 
     @property
     def per_page(self):
