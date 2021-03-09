@@ -48,7 +48,7 @@ class InitiativeItem(Resource):
 @ns.route('/<id>/content')
 @ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
 @ns.response(404, 'Initiative not found.')
-class InitiativeItem(Resource):
+class InitiativeContentItem(Resource):
 
     def get(self, id):
         """Returns details of an initiative."""
