@@ -3,7 +3,7 @@ import datetime
 from flask_restplus import reqparse
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
 from tipi_data.models.initiative_type import InitiativeType
-from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
+from tipi_data.schemas.initiative import InitiativeExtendedSchema, InitiativeNoContentSchema, InitiativeSchema
 
 from tipi_backend.api.validators import validate_date
 
@@ -25,10 +25,10 @@ parser_initiatives.add_argument('author', type=str, location='args', help='To ge
 parser_initiatives.add_argument('tags', type=str, action='append', location='args', help='To get the values, check out /topics/id')
 parser_initiatives.add_argument('subtopics', type=str, action='append', location='args', help='To get the values, check out /topics/id')
 parser_initiatives.add_argument('topic', type=str, location='args', help='To get the values, check out /topics')
-parser_initiatives.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full(default), simple')
+parser_initiatives.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full(default), no-content, simple')
 
 parser_initiative = reqparse.RequestParser()
-parser_initiative.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full, simple(default)')
+parser_initiative.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full, no-content(default), simple')
 
 parser_stats = reqparse.RequestParser()
 parser_stats.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
@@ -200,6 +200,8 @@ class SearchInitiativeParser:
     def serializer(self):
         if self._serializer == 'full':
             return InitiativeExtendedSchema
+        if self._serializer == 'no-content':
+            return InitiativeNoContentSchema
         return InitiativeSchema
 
 class InitiativeParser():
@@ -211,7 +213,9 @@ class InitiativeParser():
     def serializer(self):
         if self._serializer == 'simple':
             return InitiativeSchema
-        return InitiativeExtendedSchema
+        if self._serializer == 'full':
+            return InitiativeExtendedSchema
+        return InitiativeNoContentSchema
 
     def _return_attr_in_params(self, attrname='', type=str, default=''):
         if attrname in self._params:
