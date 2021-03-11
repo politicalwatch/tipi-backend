@@ -19,7 +19,7 @@ from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
 from tipi_data.models.initiative import Initiative
 from tipi_data.models.initiative_type import InitiativeType
 from tipi_data.models.alert import Alert, Search
-from tipi_data.schemas.initiative import InitiativeSchema, InitiativeContentSchema, InitiativeExtendedSchema
+from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_data.schemas.initiative_type import InitiativeTypeSchema
 from tipi_data.models.place import Place
 from tipi_data.schemas.place import PlaceSchema
@@ -29,7 +29,7 @@ from tipi_data.schemas.scanned import ScannedSchema
 from tipi_data.utils import generate_id
 
 from tipi_backend.settings import Config
-from tipi_backend.api.parsers import SearchInitiativeParser
+from tipi_backend.api.parsers import SearchInitiativeParser, InitiativeParser
 
 
 """ TOPICS METHODS """
@@ -71,13 +71,13 @@ def search_initiatives(params):
     pages = int(total/parser.per_page) + 1 if parser.per_page > 0 else 1
     limit = None if parser.per_page == -1 else parser.per_page
     skip = None if limit is None else (parser.page-1)*limit
-    return total, pages, parser.page, parser.per_page, InitiativeSchema(many=True).dump(Initiative.objects(__raw__=parser.params).limit(limit).skip(skip))
+    serializer = parser.serializer
+    return total, pages, parser.page, parser.per_page, serializer(many=True).dump(Initiative.objects(__raw__=parser.params).limit(limit).skip(skip))
 
-def get_initiative(id):
-    return InitiativeExtendedSchema().dump(Initiative.objects.get(id=id))
-
-def get_content_initiative(id):
-    return InitiativeContentSchema().dump(Initiative.objects.get(id=id))
+def get_initiative(id, params):
+    parser = InitiativeParser(params)
+    serializer = parser.serializer
+    return serializer().dump(Initiative.objects.get(id=id))
 
 def get_places():
     return PlaceSchema(many=True).dump(Place.objects())
