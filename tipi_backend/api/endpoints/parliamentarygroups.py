@@ -29,4 +29,7 @@ class ParliamentaryGroupItem(Resource):
 
     def get(self, id):
         """Returns details of a parliamentary group."""
-        return get_parliamentarygroup(id)
+        try:
+            return get_parliamentarygroup(id)
+        except Exception:
+            return {'Error': 'No parliamentary group found'}, 404

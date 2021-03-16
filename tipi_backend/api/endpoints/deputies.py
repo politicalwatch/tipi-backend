@@ -29,4 +29,7 @@ class DeputyItem(Resource):
 
     def get(self, id):
         """Returns details of a deputy."""
-        return get_deputy(id)
+        try:
+            return get_deputy(id)
+        except Exception:
+            return {'Error': 'No deputy found'}, 404

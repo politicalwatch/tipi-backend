@@ -45,4 +45,7 @@ class InitiativeItem(Resource):
     def get(self, id):
         """Returns details of an initiative."""
         args = parser_initiative.parse_args(request)
-        return get_initiative(id, args)
+        try:
+            return get_initiative(id, args)
+        except Exception:
+            return {'Error': 'No initiative found'}, 404

@@ -74,5 +74,8 @@ class TaggerResult(Resource):
 
     def get(self, id):
         """Returns tagging task's result"""
-        tipi_tasks.init()
-        return tipi_tasks.tagger.check_status_task(id)
+        try:
+            tipi_tasks.init()
+            return tipi_tasks.tagger.check_status_task(id)
+        except Exception:
+            return {'Error': 'No task found'}, 404

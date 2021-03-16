@@ -37,7 +37,10 @@ class ScannedItem(Resource):
 
     def get(self, id):
         """Returns details of a scanned document."""
-        return get_scanned(id)
+        try:
+            return get_scanned(id)
+        except Exception:
+            return {'Error': 'No scanned document found'}, 404
 
 @ns.route('/search/<query>')
 @ns.doc(False)

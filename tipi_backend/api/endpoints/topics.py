@@ -28,4 +28,7 @@ class TopicItem(Resource):
 
     def get(self, id):
         """Returns details of a topic."""
-        return get_topic(id)
+        try:
+            return get_topic(id)
+        except Exception:
+            return {'Error': 'No topic found'}, 404
