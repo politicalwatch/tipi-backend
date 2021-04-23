@@ -1,4 +1,5 @@
 import datetime
+from importlib import import_module as im
 
 from flask_restplus import reqparse
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
@@ -6,6 +7,7 @@ from tipi_data.models.initiative_type import InitiativeType
 from tipi_data.schemas.initiative import InitiativeExtendedSchema, InitiativeNoContentSchema, InitiativeSchema
 
 from tipi_backend.api.validators import validate_date
+from tipi_backend.settings import Config
 
 
 parser_initiatives = reqparse.RequestParser()
@@ -62,7 +64,8 @@ class SearchInitiativeParser:
                 code = InitiativeType.objects.get(name=value)['id']
             except Exception:
                 code = ''
-            return {'initiative_type': code}
+            itm = im('tipi_backend.api.managers.{}.initiative_type'.format(Config.COUNTRY))
+            return itm.InitiativeTypeManager().get_search_for(code)
 
     class TopicFieldParser():
         @staticmethod

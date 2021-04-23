@@ -23,6 +23,6 @@ class InitiativeTypeManager():
 
     def get_search_for(self, type):
         try:
-            return {'initiative_type': {'$in': self.types[type]}}
+            return {'initiative_type': type}
         except:
             return {}
