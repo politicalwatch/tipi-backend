@@ -83,7 +83,8 @@ def get_places():
     return PlaceSchema(many=True).dump(Place.objects())
 
 def get_initiative_types():
-    return InitiativeTypeSchema(many=True).dump(InitiativeType.objects())
+    initiative_types = InitiativeType.objects()
+    return InitiativeTypeSchema(many=True).dump(initiative_types)
 
 def get_initiative_status():
     ism = im('tipi_backend.api.managers.{}.initiative_status'.format(Config.COUNTRY))

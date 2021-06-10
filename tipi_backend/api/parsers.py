@@ -60,6 +60,18 @@ class SearchInitiativeParser:
     class TypeFieldParser():
         @staticmethod
         def get_search_for(key, value):
+            if "','" in value:
+                values = value.split("','")
+                codes = []
+                for value in values:
+                    clean = value.replace("'", "")
+                    try:
+                        codes.append(InitiativeType.objects.get(name=clean)['id'])
+                    except Exception:
+                        pass
+                return { 'initiative_type': { '$in': codes } }
+            else:
+                value = value.replace("'", "")
             try:
                 code = InitiativeType.objects.get(name=value)['id']
             except Exception:
