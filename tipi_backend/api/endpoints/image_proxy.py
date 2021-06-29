@@ -13,6 +13,9 @@ ns = Namespace('proxy', description='Operations related to proxy')
 class Proxy(Resource):
 
     def get(self):
+        if 'url' not in request.args:
+            return ('', 204)
+
         url = request.args['url']
         req = get(url, stream = True)
         return Response(stream_with_context(req.iter_content()), content_type = req.headers['content-type'])
