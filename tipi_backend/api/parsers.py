@@ -36,6 +36,9 @@ parser_stats = reqparse.RequestParser()
 parser_stats.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
 parser_stats.add_argument('subtopic', type=str, location='args', help='To get the values, check out /topics/id')
 
+parser_stats_by_group = reqparse.RequestParser()
+parser_stats_by_group.add_argument('parliamentarygroup', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
+
 
 parser_authors = reqparse.RequestParser()
 parser_authors.add_argument('name', type=str, location='args', help='Send a name')

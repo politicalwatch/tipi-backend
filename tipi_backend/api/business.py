@@ -2,11 +2,12 @@ from datetime import datetime
 from os import environ as env
 import json
 import ast
-import pcre
 import logging
 import time
 import re
 from importlib import import_module as im
+
+from natsort import natsorted, ns
 
 import tipi_tasks
 
@@ -119,6 +120,29 @@ def get_places_stats(params):
     if params['subtopic'] is not None:
         return _get_subdoc_stats(stats, 'placesBySubtopics', params['subtopic'], 'places')
     return _get_subdoc_stats(stats, 'placesByTopics', params['topic'], 'places')
+
+def get_topics_by_parliamentarygroup_stats(params):
+    try:
+        ParliamentaryGroup.objects().get(name=params['parliamentarygroup'])
+    except Exception:
+        return [], 404
+    stats = json.loads(Stats.objects[0].to_json())
+    topics = []
+    for topic_element in stats['parliamentarygroupsByTopics']:
+        filtered_initiatives = [
+                x['initiatives']
+                for x in topic_element['parliamentarygroups']
+                if x['_id'] == params['parliamentarygroup']
+                ]
+        topics.append({
+            'topic': topic_element['_id'],
+            'initiatives': 0 if not filtered_initiatives else filtered_initiatives[0]
+            })
+    return natsorted(
+            topics,
+            lambda x: x['topic'],
+            alg=ns.IGNORECASE
+            )
 
 
 """ TAGGER METHODS """

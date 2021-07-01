@@ -3,12 +3,15 @@ import logging
 from flask import request
 from flask_restplus import Namespace, Resource
 
-from tipi_backend.api.parsers import parser_stats
+from tipi_backend.api.parsers import \
+        parser_stats, \
+        parser_stats_by_group
 from tipi_backend.api.business import \
         get_overall_stats, \
         get_deputies_stats, \
         get_parliamentarygroups_stats, \
-        get_places_stats
+        get_places_stats, \
+        get_topics_by_parliamentarygroup_stats
 
 
 log = logging.getLogger(__name__)
@@ -49,3 +52,12 @@ class PlacesStats(Resource):
         """Returns top five places by topics (and/or subtopics)."""
         args = parser_stats.parse_args(request)
         return get_places_stats(args)
+
+@ns.route('/topics-by-parliamentarygroup')
+@ns.expect(parser_stats_by_group)
+class TopicsByParliamentaryGroupStats(Resource):
+
+    def get(self):
+        """Returns ranking of topics by parliamentary group."""
+        args = parser_stats_by_group.parse_args(request)
+        return get_topics_by_parliamentarygroup_stats(args)
