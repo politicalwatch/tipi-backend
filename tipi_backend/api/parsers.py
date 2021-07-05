@@ -17,7 +17,7 @@ parser_initiatives.add_argument('per_page', type=int, default=20, location='args
 # Initiative parameters
 parser_initiatives.add_argument('title', type=str, location='args')
 parser_initiatives.add_argument('status', type=str, location='args', help='To get the values, check out /initiative-status')
-parser_initiatives.add_argument('type', type=str, location='args', help='To get the values, check out /initiative-type')
+parser_initiatives.add_argument('type', type=str, action='append', location='args', help='To get the values, check out /initiative-type')
 parser_initiatives.add_argument('reference', type=str, location='args')
 parser_initiatives.add_argument('place', type=str, location='args')
 parser_initiatives.add_argument('enddate', type=str, location='args', help='Date format must be yyyy-mm-dd')
@@ -63,18 +63,17 @@ class SearchInitiativeParser:
     class TypeFieldParser():
         @staticmethod
         def get_search_for(key, value):
-            if "','" in value:
-                values = value.split("','")
+            if len(value) > 1:
                 codes = []
-                for value in values:
-                    clean = value.replace("'", "")
+                for item in value:
+                    clean = item.replace("'", "")
                     try:
                         codes.append(InitiativeType.objects.get(name=clean)['id'])
                     except Exception:
                         pass
                 return { 'initiative_type': { '$in': codes } }
             else:
-                value = value.replace("'", "")
+                value = value[0].replace("'", "")
             try:
                 code = InitiativeType.objects.get(name=value)['id']
             except Exception:
