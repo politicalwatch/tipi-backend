@@ -28,6 +28,7 @@ parser_initiatives.add_argument('tags', type=str, action='append', location='arg
 parser_initiatives.add_argument('subtopics', type=str, action='append', location='args', help='To get the values, check out /topics/id')
 parser_initiatives.add_argument('topic', type=str, location='args', help='To get the values, check out /topics')
 parser_initiatives.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full(default), no-content, simple')
+parser_initiatives.add_argument('knowledgebase', type=str, location='args', help='To filter the tagged results of the initiatives.')
 
 parser_initiative = reqparse.RequestParser()
 parser_initiative.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full, no-content(default), simple')
@@ -152,6 +153,8 @@ class SearchInitiativeParser:
         self._per_page = self._return_attr_in_params(attrname='per_page', type=int, default=20, clean=True)
         self._page = self._return_attr_in_params(attrname='page', type=int, default=1, clean=True)
         self._serializer = self._return_attr_in_params(attrname='serializer', type=str, default='', clean=True)
+        kb_param = self._return_attr_in_params(attrname='knowledgebase', type=str, default=False, clean=True)
+        self.kb = kb_param.split(',') if kb_param else kb_param
         self._join_tags_and_subtopics_in_params()
         self._join_dates_in_params()
         self._parse_params()

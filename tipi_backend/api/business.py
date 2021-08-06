@@ -73,7 +73,9 @@ def search_initiatives(params):
     limit = None if parser.per_page == -1 else parser.per_page
     skip = None if limit is None else (parser.page-1)*limit
     serializer = parser.serializer
-    return total, pages, parser.page, parser.per_page, serializer(many=True).dump(Initiative.objects(__raw__=parser.params).limit(limit).skip(skip))
+
+    kb = parser.kb
+    return total, pages, parser.page, parser.per_page, serializer(kb, many=True).dump(Initiative.objects(__raw__=parser.params).limit(limit).skip(skip))
 
 def get_initiative(id, params):
     parser = InitiativeParser(params)
