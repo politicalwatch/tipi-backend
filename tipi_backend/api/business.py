@@ -11,22 +11,23 @@ from natsort import natsorted, ns
 
 import tipi_tasks
 
-from tipi_data.models.topic import Topic
-from tipi_data.schemas.topic import TopicSchema, TopicExtendedSchema
+from tipi_data.models.alert import Alert, Search
 from tipi_data.models.deputy import Deputy
-from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
-from tipi_data.models.parliamentarygroup import ParliamentaryGroup
-from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
 from tipi_data.models.initiative import Initiative
 from tipi_data.models.initiative_type import InitiativeType
-from tipi_data.models.alert import Alert, Search
+from tipi_data.models.parliamentarygroup import ParliamentaryGroup
+from tipi_data.models.place import Place
+from tipi_data.models.scanned import Scanned
+from tipi_data.models.stats import Stats
+from tipi_data.models.topic import Topic
+from tipi_data.repositories.initiatives import Initiatives
+from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
 from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_data.schemas.initiative_type import InitiativeTypeSchema
-from tipi_data.models.place import Place
+from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
 from tipi_data.schemas.place import PlaceSchema
-from tipi_data.models.stats import Stats
-from tipi_data.models.scanned import Scanned
 from tipi_data.schemas.scanned import ScannedSchema
+from tipi_data.schemas.topic import TopicSchema, TopicExtendedSchema
 from tipi_data.utils import generate_id
 
 from tipi_backend.settings import Config
@@ -75,12 +76,13 @@ def search_initiatives(params):
     serializer = parser.serializer
 
     kb = parser.kb
-    return total, pages, parser.page, parser.per_page, serializer(kb, many=True).dump(Initiative.objects(__raw__=parser.params).limit(limit).skip(skip))
+    return total, pages, parser.page, parser.per_page, serializer(kb=kb, many=True).dump(Initiatives.by_query(parser.params).limit(limit).skip(skip))
 
 def get_initiative(id, params):
     parser = InitiativeParser(params)
     serializer = parser.serializer
-    return serializer().dump(Initiative.objects.get(id=id))
+    kb = parser.kb
+    return serializer(kb=kb).dump(Initiatives.get(id))
 
 def get_places():
     return PlaceSchema(many=True).dump(Place.objects())
