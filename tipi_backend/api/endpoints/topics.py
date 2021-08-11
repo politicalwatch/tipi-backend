@@ -32,7 +32,6 @@ class TopicsCollection(Resource):
 @ns.route('/<id>')
 @ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
 @ns.response(404, 'Topic not found.')
-@ns.expect(parser_topic)
 class TopicItem(Resource):
 
     def get(self, id):
