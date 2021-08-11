@@ -21,6 +21,7 @@ from tipi_data.models.scanned import Scanned
 from tipi_data.models.stats import Stats
 from tipi_data.models.topic import Topic
 from tipi_data.repositories.initiatives import Initiatives
+from tipi_data.repositories.topics import Topics
 from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
 from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_data.schemas.initiative_type import InitiativeTypeSchema
@@ -36,11 +37,14 @@ from tipi_backend.api.parsers import SearchInitiativeParser, InitiativeParser
 
 """ TOPICS METHODS """
 
-def get_topics():
-    return TopicSchema(many=True).dump(Topic.objects.natsorted())
+def get_topics(kb=False):
+    if kb:
+        return TopicSchema(many=True).dump(Topics.by_kb(kb))
+
+    return TopicSchema(many=True).dump(Topics.get_public())
 
 def get_topic(id):
-    return TopicExtendedSchema().dump(Topic.objects.get(id=id))
+    return TopicExtendedSchema().dump(Topics.get(id))
 
 
 """ DEPUTIES METHODS """
