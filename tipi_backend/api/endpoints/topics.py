@@ -5,7 +5,7 @@ from flask_restplus import Namespace, Resource
 
 from tipi_backend.api.business import get_topics, get_topic
 from tipi_backend.api.endpoints import cache
-from tipi_backend.api.parsers import parser_topic
+from tipi_backend.api.parsers import parser_kb
 
 
 log = logging.getLogger(__name__)
@@ -14,13 +14,13 @@ ns = Namespace('topics', description='Operations related to topics')
 
 
 @ns.route('/')
-@ns.expect(parser_topic)
+@ns.expect(parser_kb)
 class TopicsCollection(Resource):
 
     @cache.cached()
     def get(self):
         """Returns list of topics."""
-        args = parser_topic.parse_args(request)
+        args = parser_kb.parse_args(request)
 
         if 'knowledgebase' in args and args['knowledgebase'] is not None:
             kb = args['knowledgebase']

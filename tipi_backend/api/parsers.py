@@ -49,10 +49,11 @@ parser_authors.add_argument('name', type=str, location='args', help='Send a name
 parser_tagger = reqparse.RequestParser()
 parser_tagger.add_argument(name='text', type=str, location='form', help='Text to be processed (PREFERENCE)')
 parser_tagger.add_argument(name='file', location='files', help='File to be processed')
+parser_tagger.add_argument('knowledgebase', type=str, location='args', help='To filter the topics by knowledge base.')
 
 
-parser_topic = reqparse.RequestParser()
-parser_topic.add_argument('knowledgebase', type=str, location='args', help='To filter the topics by knowledge base.')
+parser_kb = reqparse.RequestParser()
+parser_kb.add_argument('knowledgebase', type=str, location='args', help='To filter the topics by knowledge base.')
 
 
 class ParameterBag():

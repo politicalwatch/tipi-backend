@@ -21,6 +21,7 @@ from tipi_data.models.scanned import Scanned
 from tipi_data.models.stats import Stats
 from tipi_data.models.topic import Topic
 from tipi_data.repositories.initiatives import Initiatives
+from tipi_data.repositories.tags import Tags
 from tipi_data.repositories.topics import Topics
 from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
 from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
@@ -156,7 +157,7 @@ def get_topics_by_parliamentarygroup_stats(params):
 """ TAGGER METHODS """
 
 def get_tags():
-    return Topic.get_tags()
+    return Tags.get_all()
 
 
 """ ALERTS METHODS """
