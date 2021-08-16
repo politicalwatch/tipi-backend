@@ -13,6 +13,7 @@ from tipi_backend.api.business import get_tags
 from tipi_backend.api.endpoints import cache, limiter
 from tipi_backend.api.parsers import parser_tagger, parser_kb
 from tipi_backend.settings import Config
+from tipi_data.repositories.knowledgebases import KnowledgeBases
 
 
 log = logging.getLogger(__name__)
@@ -21,10 +22,6 @@ ns = Namespace('tagger', description='Operations related to tag texts using our 
 
 
 def filter_tags(result, kb):
-    if not kb:
-        return result
-    kb = kb.split(',')
-
     topics = result['result']['topics']
     tags = result['result']['tags']
     new_topics = []
@@ -39,6 +36,16 @@ def filter_tags(result, kb):
 
     return result
 
+def remove_fields(result):
+    tags = result['result']['tags']
+    for tag in tags:
+        del tag['public']
+
+def get_kb(args):
+    if 'knowledgebase' in args and args['knowledgebase'] is not None:
+        return args['knowledgebase'].split(',')
+    return KnowledgeBases.get_public()
+
 
 @ns.route('/')
 @ns.expect(parser_tagger)
@@ -48,9 +55,7 @@ class TaggerExtractor(Resource):
         """Returns a list of topics and tags matching the text."""
         try:
             args = parser_tagger.parse_args(request)
-            kb = False
-            if 'knowledgebase' in args:
-                kb = args['knowledgebase']
+            kb = get_kb(args)
 
             cache_key = Config.CACHE_TAGS
             tags = cache.get(cache_key)
@@ -85,6 +90,7 @@ class TaggerExtractor(Resource):
             else:
                 result = tipi_tasks.tagger.extract_tags_from_text(text, tags)
                 result = filter_tags(result, kb)
+                remove_fields(result)
 
             return result
         except Exception as e:
@@ -107,12 +113,11 @@ class TaggerResult(Resource):
             result = tipi_tasks.tagger.check_status_task(id)
 
             args = parser_kb.parse_args(request)
-            kb = False
-            if 'knowledgebase' in args:
-                kb = args['knowledgebase']
+            kb = get_kb(args)
 
             if result['status'] == 'SUCCESS':
                 result = filter_tags(result, kb)
+                remove_fields(result)
 
             return result
         except Exception:
