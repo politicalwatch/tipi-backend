@@ -9,11 +9,10 @@ from flask import request, abort
 from flask_restplus import Namespace, Resource
 
 import tipi_tasks
-from tipi_backend.api.business import get_tags
+from tipi_backend.api.business import get_tags, get_kbs
 from tipi_backend.api.endpoints import cache, limiter
 from tipi_backend.api.parsers import parser_tagger, parser_kb
 from tipi_backend.settings import Config
-from tipi_data.repositories.knowledgebases import KnowledgeBases
 
 
 log = logging.getLogger(__name__)
@@ -41,11 +40,6 @@ def remove_fields(result):
     for tag in tags:
         del tag['public']
 
-def get_kb(args):
-    if 'knowledgebase' in args and args['knowledgebase'] is not None:
-        return args['knowledgebase'].split(',')
-    return KnowledgeBases.get_public()
-
 
 @ns.route('/')
 @ns.expect(parser_tagger)
@@ -55,7 +49,7 @@ class TaggerExtractor(Resource):
         """Returns a list of topics and tags matching the text."""
         try:
             args = parser_tagger.parse_args(request)
-            kb = get_kb(args)
+            kb = get_kbs(args)
 
             cache_key = Config.CACHE_TAGS
             tags = cache.get(cache_key)
@@ -113,7 +107,7 @@ class TaggerResult(Resource):
             result = tipi_tasks.tagger.check_status_task(id)
 
             args = parser_kb.parse_args(request)
-            kb = get_kb(args)
+            kb = get_kbs(args)
 
             if result['status'] == 'SUCCESS':
                 result = filter_tags(result, kb)

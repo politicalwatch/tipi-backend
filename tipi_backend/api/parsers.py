@@ -37,9 +37,11 @@ parser_initiative.add_argument('knowledgebase', type=str, location='args', help=
 parser_stats = reqparse.RequestParser()
 parser_stats.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
 parser_stats.add_argument('subtopic', type=str, location='args', help='To get the values, check out /topics/id')
+parser_stats.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')
 
 parser_stats_by_group = reqparse.RequestParser()
 parser_stats_by_group.add_argument('parliamentarygroup', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
+parser_stats_by_group.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')
 
 
 parser_authors = reqparse.RequestParser()
@@ -49,7 +51,7 @@ parser_authors.add_argument('name', type=str, location='args', help='Send a name
 parser_tagger = reqparse.RequestParser()
 parser_tagger.add_argument(name='text', type=str, location='form', help='Text to be processed (PREFERENCE)')
 parser_tagger.add_argument(name='file', location='files', help='File to be processed')
-parser_tagger.add_argument('knowledgebase', type=str, location='args', help='To filter the topics by knowledge base.')
+parser_tagger.add_argument('knowledgebase', type=str, location='args', help='To filter the tagger results by knowledge base.')
 
 
 parser_kb = reqparse.RequestParser()

@@ -21,6 +21,7 @@ from tipi_data.models.scanned import Scanned
 from tipi_data.models.stats import Stats
 from tipi_data.models.topic import Topic
 from tipi_data.repositories.initiatives import Initiatives
+from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.repositories.tags import Tags
 from tipi_data.repositories.topics import Topics
 from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
@@ -103,20 +104,34 @@ def get_initiative_status():
 
 """ STATS METHODS """
 
-def get_overall_stats():
-    return json.loads(Stats.objects()[0].to_json())['overall']
+def get_overall_stats(params):
+    kbs = get_kbs(params)
+    all_kbs = KnowledgeBases.get_all()
+    kbs_to_remove = list(set(all_kbs) - set(kbs))
 
-def _get_subdoc_stats(stats, key, value, returnkey):
-    subdoc_stats = [x for x in stats[key] if x['_id'] == value]
-    if len(subdoc_stats) == 0:
-        return {}
-    return subdoc_stats[0][returnkey]
+    output = json.loads(Stats.objects()[0].to_json())['overall']
+
+    for kb in kbs_to_remove:
+        del output['topics'][kb]
+        del output['subtopics'][kb]
+        del output[kb]
+
+    return output
+
+def _get_subdoc_stats(stats, key, value, returnkey, kbs):
+    result = {}
+    for kb in kbs:
+        subdoc_stats = [x for x in stats[key][kb] if x['_id'] == value]
+        if len(subdoc_stats) != 0:
+            result[kb] = subdoc_stats[0][returnkey]
+    return result
 
 def get_deputies_stats(params):
     stats = json.loads(Stats.objects()[0].to_json())
+    kb = get_kbs(params)
     if params['subtopic'] is not None:
-        return _get_subdoc_stats(stats, 'deputiesBySubtopics', params['subtopic'], 'deputies')
-    return _get_subdoc_stats(stats, 'deputiesByTopics', params['topic'], 'deputies')
+        return _get_subdoc_stats(stats, 'deputiesBySubtopics', params['subtopic'], 'deputies', kb)
+    return _get_subdoc_stats(stats, 'deputiesByTopics', params['topic'], 'deputies', kb)
 
 def get_parliamentarygroups_stats(params):
     stats = json.loads(Stats.objects()[0].to_json())
@@ -152,6 +167,14 @@ def get_topics_by_parliamentarygroup_stats(params):
             lambda x: x['topic'],
             alg=ns.IGNORECASE
             )
+
+
+""" KNOWLEDGEBASE METHODS """
+
+def get_kbs(args):
+    if 'knowledgebase' in args and args['knowledgebase'] is not None:
+        return args['knowledgebase'].split(',')
+    return KnowledgeBases.get_public()
 
 
 """ TAGGER METHODS """
