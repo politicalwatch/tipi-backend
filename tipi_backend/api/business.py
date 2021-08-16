@@ -135,15 +135,17 @@ def get_deputies_stats(params):
 
 def get_parliamentarygroups_stats(params):
     stats = json.loads(Stats.objects()[0].to_json())
+    kb = get_kbs(params)
     if params['subtopic'] is not None:
-        return _get_subdoc_stats(stats, 'parliamentarygroupsBySubtopics', params['subtopic'], 'parliamentarygroups')
-    return _get_subdoc_stats(stats, 'parliamentarygroupsByTopics', params['topic'], 'parliamentarygroups')
+        return _get_subdoc_stats(stats, 'parliamentarygroupsBySubtopics', params['subtopic'], 'parliamentarygroups', kb)
+    return _get_subdoc_stats(stats, 'parliamentarygroupsByTopics', params['topic'], 'parliamentarygroups', kb)
 
 def get_places_stats(params):
     stats = json.loads(Stats.objects()[0].to_json())
+    kb = get_kbs(params)
     if params['subtopic'] is not None:
-        return _get_subdoc_stats(stats, 'placesBySubtopics', params['subtopic'], 'places')
-    return _get_subdoc_stats(stats, 'placesByTopics', params['topic'], 'places')
+        return _get_subdoc_stats(stats, 'placesBySubtopics', params['subtopic'], 'places', kb)
+    return _get_subdoc_stats(stats, 'placesByTopics', params['topic'], 'places', kb)
 
 def get_topics_by_parliamentarygroup_stats(params):
     try:
@@ -151,12 +153,13 @@ def get_topics_by_parliamentarygroup_stats(params):
     except Exception:
         return [], 404
     stats = json.loads(Stats.objects[0].to_json())
+    kbs = get_kbs(params)
     topics = []
     for topic_element in stats['parliamentarygroupsByTopics']:
         filtered_initiatives = [
                 x['initiatives']
                 for x in topic_element['parliamentarygroups']
-                if x['_id'] == params['parliamentarygroup']
+                if x['_id'] == params['parliamentarygroup'] and x['knowledgebase'] in kbs
                 ]
         topics.append({
             'topic': topic_element['_id'],
