@@ -155,15 +155,19 @@ def get_topics_by_parliamentarygroup_stats(params):
     stats = json.loads(Stats.objects[0].to_json())
     kbs = get_kbs(params)
     topics = []
-    for topic_element in stats['parliamentarygroupsByTopics']:
-        filtered_initiatives = [
+    for kb in stats['parliamentarygroupsByTopics']:
+        topic_elements = stats['parliamentarygroupsByTopics'][kb]
+        if kb not in kbs:
+            continue
+        for topic_element in topic_elements:
+            filtered_initiatives = [
                 x['initiatives']
                 for x in topic_element['parliamentarygroups']
-                if x['_id'] == params['parliamentarygroup'] and x['knowledgebase'] in kbs
+                if x['_id'] == params['parliamentarygroup']
                 ]
-        topics.append({
-            'topic': topic_element['_id'],
-            'initiatives': 0 if not filtered_initiatives else filtered_initiatives[0]
+            topics.append({
+                'topic': topic_element['_id'],
+                'initiatives': 0 if not filtered_initiatives else filtered_initiatives[0]
             })
     return natsorted(
             topics,
