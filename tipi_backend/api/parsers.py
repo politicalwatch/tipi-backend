@@ -90,6 +90,14 @@ class ParameterBag():
             del self.params[key]
             self.params.update(field_parsers[key].get_search_for(key, value))
 
+    def moveToTagged(self):
+        if 'topics' in self.params:
+            self.params['tagged.topics'] = self.params['topics']
+            del self.params['topics']
+        if 'tags' in self.params:
+            self.params['tagged.tags'] = self.params['tags']
+            del self.params['tags']
+
     def join_tags(self):
         tags = [] if 'tags' not in self.params else self.params['tags']
         subtopics = [] if 'subtopics' not in self.params else self.params['subtopics']
@@ -223,6 +231,7 @@ class SearchInitiativeParser:
         self._params.join_tags()
         self._params.join_dates()
         self._params.parse(self.PARSER_BY_PARAMS)
+        self._params.moveToTagged()
 
     @property
     def per_page(self):
