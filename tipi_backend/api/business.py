@@ -41,7 +41,7 @@ from tipi_backend.api.parsers import SearchInitiativeParser, InitiativeParser
 
 def get_topics(kb=False):
     if kb:
-        return TopicSchema(many=True).dump(Topics.by_kb(kb))
+        return TopicSchema(many=True).dump(Topics.by_kb_sorted(kb))
 
     return TopicSchema(many=True).dump(Topics.get_public())
 
