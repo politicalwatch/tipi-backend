@@ -10,7 +10,7 @@ from tipi_backend.api.business import search_all_initiatives
 
 log = logging.getLogger(__name__)
 
-ns = Namespace('all_initiatives', description='Operations related to initiatives')
+ns = Namespace('all-initiatives', description='Operations related to initiatives')
 
 
 @ns.route('/')
