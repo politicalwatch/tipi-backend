@@ -15,9 +15,10 @@ from tipi_backend.api.endpoints.topics import ns as topics_namespace
 from tipi_backend.api.endpoints.deputies import ns as deputies_namespace
 from tipi_backend.api.endpoints.parliamentarygroups import ns as parliamentarygroups_namespace
 from tipi_backend.api.endpoints.initiatives import ns as initiatives_namespace
-from tipi_backend.api.endpoints.places import ns as places_namespace
+from tipi_backend.api.endpoints.all_initiatives import ns as all_initiatives_namespace
 from tipi_backend.api.endpoints.initiative_types import ns as initiativetypes_namespace
 from tipi_backend.api.endpoints.initiative_status import ns as initiativestatus_namespace
+from tipi_backend.api.endpoints.places import ns as places_namespace
 from tipi_backend.api.endpoints.stats import ns as stats_namespace
 from tipi_backend.api.endpoints.tagger import ns as tagger_namespace
 from tipi_backend.api.endpoints.alerts import ns as alerts_namespace
@@ -53,10 +54,11 @@ def add_namespaces(app):
     namespaces = [topics_namespace,
                   deputies_namespace,
                   parliamentarygroups_namespace,
+                  all_initiatives_namespace,
                   initiatives_namespace,
-                  places_namespace,
                   initiativetypes_namespace,
                   initiativestatus_namespace,
+                  places_namespace,
                   stats_namespace,
                   tagger_namespace,
                   scanned_namespace,
