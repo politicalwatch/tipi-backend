@@ -75,7 +75,7 @@ def get_parliamentarygroup(id):
 
 def search_initiatives(params):
     parser = SearchInitiativeParser(params)
-    total = Initiative.objects(__raw__=parser.params).count()
+    total = Initiatives.by_query(parser.params).count()
     pages = int(total/parser.per_page) + 1 if parser.per_page > 0 else 1
     limit = None if parser.per_page == -1 else parser.per_page
     skip = None if limit is None else (parser.page-1)*limit
