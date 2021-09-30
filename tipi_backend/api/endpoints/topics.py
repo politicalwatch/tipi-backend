@@ -38,5 +38,6 @@ class TopicItem(Resource):
         """Returns details of a topic."""
         try:
             return get_topic(id)
-        except Exception:
+        except Exception as e:
+            log.error(e)
             return {'Error': 'No topic found'}, 404

@@ -114,5 +114,6 @@ class TaggerResult(Resource):
                 remove_fields(result)
 
             return result
-        except Exception:
+        except Exception as e:
+            log.error(e)
             return {'Error': 'No task found'}, 404

@@ -47,5 +47,6 @@ class InitiativeItem(Resource):
         args = parser_initiative.parse_args(request)
         try:
             return get_initiative(id, args)
-        except Exception:
+        except Exception as e:
+            log.error(e)
             return {'Error': 'No initiative found'}, 404
