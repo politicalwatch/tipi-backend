@@ -4,6 +4,7 @@ from importlib import import_module as im
 from flask_restplus import reqparse
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
 from tipi_data.models.initiative_type import InitiativeType
+from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.schemas.initiative import InitiativeExtendedSchema, InitiativeNoContentSchema, InitiativeSchema
 
 from tipi_backend.api.validators import validate_date
@@ -124,6 +125,13 @@ class ParameterBag():
     def all(self):
         return self.params
 
+    def get_kb(self):
+        kb_param = self.get('knowledgebase', str, False, True)
+        kb = kb_param.split(',') if kb_param else kb_param
+        if not kb:
+            kb = KnowledgeBases.get_public()
+        return kb
+
 class SearchInitiativeParser:
 
     class DefaultFieldParser():
@@ -225,8 +233,7 @@ class SearchInitiativeParser:
         self._per_page = self._params.get('per_page', int, 20, True)
         self._page = self._params.get('page', int, 1, True)
         self._serializer = self._params.get('serializer', str, '', True)
-        kb_param = self._params.get('knowledgebase', str, False, True)
-        self.kb = kb_param.split(',') if kb_param else kb_param
+        self.kb = self._params.get_kb()
 
         self._params.join_tags()
         self._params.join_dates()
@@ -258,8 +265,7 @@ class InitiativeParser():
     def __init__(self, params):
         self._params = ParameterBag(params)
         self._serializer = self._params.get('serializer')
-        kb_param = self._params.get('knowledgebase', str, False, True)
-        self.kb = kb_param.split(',') if kb_param else kb_param
+        self.kb = self._params.get_kb()
 
     @property
     def serializer(self):
