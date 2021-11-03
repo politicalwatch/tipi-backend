@@ -16,7 +16,7 @@ parser_initiatives = reqparse.RequestParser()
 parser_initiatives.add_argument('page', type=int, default=1, location='args', help='Page number')
 parser_initiatives.add_argument('per_page', type=int, default=20, location='args', help='Initiatives per page')
 # Initiative parameters
-parser_initiatives.add_argument('title', type=str, location='args')
+parser_initiatives.add_argument('text', type=str, location='args')
 parser_initiatives.add_argument('status', type=str, location='args', help='To get the values, check out /initiative-status')
 parser_initiatives.add_argument('type', type=str, action='append', location='args', help='To get the values, check out /initiative-type')
 parser_initiatives.add_argument('reference', type=str, location='args')
@@ -139,10 +139,10 @@ class SearchInitiativeParser:
         def get_search_for(key, value):
             return {key: value}
 
-    class TitleFieldParser():
+    class TextFieldParser():
         @staticmethod
         def get_search_for(key, value):
-            return {key: {'$regex': value, '$options': 'gi'}}
+            return {'$text': {'$search': "\"{}\"".format(value)}}
 
     class TypeFieldParser():
         @staticmethod
@@ -155,7 +155,7 @@ class SearchInitiativeParser:
                         codes.append(InitiativeType.objects.get(name=clean)['id'])
                     except Exception:
                         pass
-                return { 'initiative_type': { '$in': codes } }
+                return {'initiative_type': {'$in': codes}}
             else:
                 value = value[0].replace("'", "")
             try:
@@ -225,7 +225,7 @@ class SearchInitiativeParser:
         'reference': DefaultFieldParser(),
         'type': TypeFieldParser(),
         'status': DefaultFieldParser(),
-        'title': TitleFieldParser(),
+        'text': TextFieldParser(),
     }
 
     def __init__(self, params):
