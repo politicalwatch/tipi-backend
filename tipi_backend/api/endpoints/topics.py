@@ -17,7 +17,6 @@ ns = Namespace('topics', description='Operations related to topics')
 @ns.expect(parser_kb)
 class TopicsCollection(Resource):
 
-    @cache.cached()
     def get(self):
         """Returns list of topics."""
         args = parser_kb.parse_args(request)
