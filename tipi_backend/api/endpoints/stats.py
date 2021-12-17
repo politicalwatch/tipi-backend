@@ -9,6 +9,7 @@ from tipi_backend.api.parsers import \
         parser_kb
 from tipi_backend.api.business import \
         get_overall_stats, \
+        get_lastdays_stats, \
         get_deputies_stats, \
         get_parliamentarygroups_stats, \
         get_places_stats, \
@@ -28,6 +29,14 @@ class OverallStats(Resource):
         """Returns overall stats."""
         args = parser_kb.parse_args(request)
         return get_overall_stats(args)
+
+@ns.route('/lastdays')
+class LastdaysStats(Resource):
+
+    def get(self):
+        """Returns last days stats."""
+        args = parser_kb.parse_args(request)
+        return get_lastdays_stats(args)
 
 @ns.route('/deputies')
 @ns.expect(parser_stats)

@@ -118,6 +118,11 @@ def get_overall_stats(params):
 
     return output
 
+def get_lastdays_stats(params):
+    output = json.loads(Stats.objects()[0].to_json())['lastdays']
+
+    return output
+
 def _get_subdoc_stats(stats, key, value, returnkey, kbs):
     result = {}
     for kb in kbs:
