@@ -6,7 +6,6 @@ import sentry_sdk
 from flask import Flask, Blueprint
 from flask_cors import CORS
 from sentry_sdk.integrations.flask import FlaskIntegration
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 from tipi_backend.settings import Config
 from tipi_backend.manage_alerts_by_email import alerts_by_email_blueprint
@@ -38,7 +37,6 @@ def add_sentry():
 def create_app(config=Config):
     add_sentry()
     app = Flask(__name__)
-    app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config.from_object(config)
     initialize_app(app)
 
