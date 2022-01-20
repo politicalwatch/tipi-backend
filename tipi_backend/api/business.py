@@ -2,7 +2,6 @@ from datetime import datetime
 from os import environ as env
 import json
 import ast
-import logging
 import time
 import re
 from importlib import import_module as im
@@ -89,6 +88,12 @@ def get_initiative(id, params):
     serializer = parser.serializer
     kb = parser.kb
     return serializer(kb=kb).dump(Initiatives.get(id))
+
+def get_initiative_old(id, params):
+    parser = InitiativeParser(params)
+    serializer = parser.serializer
+    kb = parser.kb
+    return serializer(kb=kb).dump(Initiatives.get_old(id))
 
 def get_places():
     return PlaceSchema(many=True).dump(Place.objects())

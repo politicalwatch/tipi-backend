@@ -6,7 +6,7 @@ from flask_restplus import Namespace, Resource
 from tipi_data.models.searches_tracker import SearchesTracker
 
 from tipi_backend.api.parsers import parser_initiative, parser_initiatives
-from tipi_backend.api.business import search_initiatives, get_initiative
+from tipi_backend.api.business import search_initiatives, get_initiative, get_initiative_old
 
 
 log = logging.getLogger(__name__)
@@ -48,5 +48,8 @@ class InitiativeItem(Resource):
         try:
             return get_initiative(id, args)
         except Exception as e:
-            log.error(e)
-            return {'Error': 'No initiative found'}, 404
+            try:
+                return get_initiative_old(id, args)
+            except Exception as e:
+                log.error(e)
+                return {'Error': 'No initiative found'}, 404
