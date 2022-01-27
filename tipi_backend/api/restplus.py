@@ -20,6 +20,10 @@ api = Api(
     version=version
 )
 
+# Dirty monkey patching to fix error on the Swagger UI.
+class ApiFixed(Api):
+    specs_url = 'https://api.quehacenlosdiputados.es/swagger.json'
+api.__class__ = ApiFixed
 
 @api.errorhandler
 def default_error_handler(e):
