@@ -74,7 +74,7 @@ def add_namespaces(app):
 def initialize_app(app):
     cache.init_app(app, config=Config.CACHE)
     limiter.init_app(app)
-    blueprint = Blueprint('dev.api', __name__)
+    blueprint = Blueprint('api', __name__)
     CORS(blueprint)
     api.init_app(blueprint)
     add_namespaces(app)
