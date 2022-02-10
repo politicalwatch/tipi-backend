@@ -4,8 +4,8 @@ Flask-Limiter==1.1.0
 Flask==1.1.1
 flask-restplus==0.13.0
 Werkzeug==0.16.1
-git+https://github.com/politicalwatch/tipi-tasks.git
-git+https://github.com/politicalwatch/tipi-data.git
+git+https://github.com/politicalwatch/tipi-tasks.git@legacy
+git+https://github.com/politicalwatch/tipi-data.git@legacy
 gunicorn==20.0.4
 python-pcre==0.7
 sentry-sdk[flask]==0.14.1
