@@ -58,6 +58,12 @@ parser_tagger.add_argument('knowledgebase', type=str, location='args', help='To 
 parser_kb = reqparse.RequestParser()
 parser_kb.add_argument('knowledgebase', type=str, location='args', help='To filter the topics by knowledge base.')
 
+parser_footprint_by_topic = reqparse.RequestParser()
+parser_footprint_by_topic.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
+
+parser_footprint_by_deputy = reqparse.RequestParser()
+parser_footprint_by_deputy.add_argument('deputy', type=str, required=True, location='args', help='To get the values, check out /deputies')
+
 
 class ParameterBag():
 

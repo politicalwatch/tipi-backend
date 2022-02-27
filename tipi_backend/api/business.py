@@ -23,11 +23,13 @@ from tipi_data.repositories.initiatives import Initiatives
 from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.repositories.tags import Tags
 from tipi_data.repositories.topics import Topics
+from tipi_data.repositories.footprints import Footprints
 from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
 from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_data.schemas.initiative_type import InitiativeTypeSchema
 from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
 from tipi_data.schemas.place import PlaceSchema
+from tipi_data.schemas.footprint import FootprintByTopicSchema, FootprintByDeputySchema
 from tipi_data.schemas.scanned import ScannedSchema
 from tipi_data.schemas.topic import TopicSchema, TopicExtendedSchema
 from tipi_data.utils import generate_id
@@ -192,6 +194,15 @@ def get_kbs(args):
     if 'knowledgebase' in args and args['knowledgebase'] is not None:
         return args['knowledgebase'].split(',')
     return KnowledgeBases.get_public()
+
+
+""" FOOTPRINT METHODS """
+
+def get_footprint_by_topic(params):
+    return FootprintByTopicSchema().dump(Footprints.get_by_topic(params['topic']))
+
+def get_footprint_by_deputy(params):
+    return FootprintByDeputySchema().dump(Footprints.get_by_deputy(params['deputy']))
 
 
 """ TAGGER METHODS """

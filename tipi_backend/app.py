@@ -19,6 +19,7 @@ from tipi_backend.api.endpoints.places import ns as places_namespace
 from tipi_backend.api.endpoints.initiative_types import ns as initiativetypes_namespace
 from tipi_backend.api.endpoints.initiative_status import ns as initiativestatus_namespace
 from tipi_backend.api.endpoints.stats import ns as stats_namespace
+from tipi_backend.api.endpoints.footprint import ns as footprint_namespace
 from tipi_backend.api.endpoints.tagger import ns as tagger_namespace
 from tipi_backend.api.endpoints.alerts import ns as alerts_namespace
 from tipi_backend.api.endpoints.scanned import ns as scanned_namespace
@@ -58,6 +59,7 @@ def add_namespaces(app):
                   initiativetypes_namespace,
                   initiativestatus_namespace,
                   stats_namespace,
+                  footprint_namespace,
                   tagger_namespace,
                   scanned_namespace,
                   proxy_namespace
