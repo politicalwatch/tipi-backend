@@ -64,6 +64,9 @@ parser_footprint_by_topic.add_argument('topic', type=str, required=True, locatio
 parser_footprint_by_deputy = reqparse.RequestParser()
 parser_footprint_by_deputy.add_argument('deputy', type=str, required=True, location='args', help='To get the values, check out /deputies')
 
+parser_footprint_by_parliamentarygroup = reqparse.RequestParser()
+parser_footprint_by_parliamentarygroup.add_argument('parliamentarygroup', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
+
 
 class ParameterBag():
 

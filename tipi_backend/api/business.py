@@ -29,7 +29,9 @@ from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSch
 from tipi_data.schemas.initiative_type import InitiativeTypeSchema
 from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
 from tipi_data.schemas.place import PlaceSchema
-from tipi_data.schemas.footprint import FootprintByTopicSchema, FootprintByDeputySchema
+from tipi_data.schemas.footprint import FootprintByTopicSchema, \
+        FootprintByDeputySchema, \
+        FootprintByParliamentaryGroupSchema
 from tipi_data.schemas.scanned import ScannedSchema
 from tipi_data.schemas.topic import TopicSchema, TopicExtendedSchema
 from tipi_data.utils import generate_id
@@ -198,11 +200,23 @@ def get_kbs(args):
 
 """ FOOTPRINT METHODS """
 
+
 def get_footprint_by_topic(params):
-    return FootprintByTopicSchema().dump(Footprints.get_by_topic(params['topic']))
+    return FootprintByTopicSchema().dump(
+            Footprints.get_by_topic(params['topic'])
+            )
+
 
 def get_footprint_by_deputy(params):
-    return FootprintByDeputySchema().dump(Footprints.get_by_deputy(params['deputy']))
+    return FootprintByDeputySchema().dump(
+            Footprints.get_by_deputy(params['deputy'])
+            )
+
+
+def get_footprint_by_parliamentarygroup(params):
+    return FootprintByParliamentaryGroupSchema().dump(
+            Footprints.get_by_parliamentarygroup(params['parliamentarygroup'])
+            )
 
 
 """ TAGGER METHODS """
