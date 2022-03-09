@@ -95,7 +95,8 @@ class ParameterBag():
         temp_params = self.params.copy()
         for key, value in temp_params.items():
             del self.params[key]
-            self.params.update(field_parsers[key].get_search_for(key, value))
+            if key in field_parsers:
+                self.params.update(field_parsers[key].get_search_for(key, value))
 
     def moveToTagged(self):
         if 'topics' in self.params:
