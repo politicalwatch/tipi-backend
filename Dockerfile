@@ -10,4 +10,4 @@ WORKDIR /app
 
 ENV FLASK_APP=tipi_backend/app.py
 
-CMD gunicorn --bind 0.0.0.0:5000 --access-logfile - tipi_backend.wsgi:app
+CMD gunicorn --bind 0.0.0.0:5000 --access-logfile - tipi_backend.wsgi:app --timeout 60
