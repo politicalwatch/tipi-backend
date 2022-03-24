@@ -1,5 +1,5 @@
 Flask-Caching==1.8.0
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-Limiter==1.1.0
 Flask==1.1.1
 flask-restplus==0.13.0
