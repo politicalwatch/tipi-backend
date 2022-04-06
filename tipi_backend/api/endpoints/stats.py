@@ -5,9 +5,11 @@ from flask_restplus import Namespace, Resource
 
 from tipi_backend.api.parsers import \
         parser_stats, \
-        parser_stats_by_group
+        parser_stats_by_group, \
+        parser_kb
 from tipi_backend.api.business import \
         get_overall_stats, \
+        get_lastdays_stats, \
         get_deputies_stats, \
         get_parliamentarygroups_stats, \
         get_places_stats, \
@@ -20,11 +22,21 @@ ns = Namespace('stats', description='Operations related to stats')
 
 
 @ns.route('/overall')
+@ns.expect(parser_kb)
 class OverallStats(Resource):
 
     def get(self):
         """Returns overall stats."""
-        return get_overall_stats()
+        args = parser_kb.parse_args(request)
+        return get_overall_stats(args)
+
+@ns.route('/lastdays')
+class LastdaysStats(Resource):
+
+    def get(self):
+        """Returns last days stats."""
+        args = parser_kb.parse_args(request)
+        return get_lastdays_stats(args)
 
 @ns.route('/deputies')
 @ns.expect(parser_stats)

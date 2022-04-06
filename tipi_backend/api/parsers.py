@@ -1,9 +1,11 @@
 import datetime
 from importlib import import_module as im
 
+from werkzeug.datastructures import FileStorage
 from flask_restplus import reqparse
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
 from tipi_data.models.initiative_type import InitiativeType
+from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.schemas.initiative import InitiativeExtendedSchema, InitiativeNoContentSchema, InitiativeSchema
 
 from tipi_backend.api.validators import validate_date
@@ -33,7 +35,7 @@ parser_initiatives = reqparse.RequestParser()
 parser_initiatives.add_argument('page', type=int, default=1, location='args', help='Page number')
 parser_initiatives.add_argument('per_page', type=int, default=20, location='args', help='Initiatives per page')
 # Initiative parameters
-parser_initiatives.add_argument('title', type=str, location='args')
+parser_initiatives.add_argument('text', type=str, location='args')
 parser_initiatives.add_argument('status', type=str, location='args', help='To get the values, check out /initiative-status')
 parser_initiatives.add_argument('type', type=str, action='append', location='args', help='To get the values, check out /initiative-type')
 parser_initiatives.add_argument('reference', type=str, location='args')
@@ -46,16 +48,20 @@ parser_initiatives.add_argument('tags', type=str, action='append', location='arg
 parser_initiatives.add_argument('subtopics', type=str, action='append', location='args', help='To get the values, check out /topics/id')
 parser_initiatives.add_argument('topic', type=str, location='args', help='To get the values, check out /topics')
 parser_initiatives.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full(default), no-content, simple')
+parser_initiatives.add_argument('knowledgebase', type=str, location='args', help='To filter the tagged results of the initiatives.')
 
 parser_initiative = reqparse.RequestParser()
 parser_initiative.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full, no-content(default), simple')
+parser_initiative.add_argument('knowledgebase', type=str, location='args', help='To filter the tagged results of the initiatives.')
 
 parser_stats = reqparse.RequestParser()
 parser_stats.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
 parser_stats.add_argument('subtopic', type=str, location='args', help='To get the values, check out /topics/id')
+parser_stats.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')
 
 parser_stats_by_group = reqparse.RequestParser()
 parser_stats_by_group.add_argument('parliamentarygroup', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
+parser_stats_by_group.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')
 
 
 parser_authors = reqparse.RequestParser()
@@ -64,7 +70,96 @@ parser_authors.add_argument('name', type=str, location='args', help='Send a name
 
 parser_tagger = reqparse.RequestParser()
 parser_tagger.add_argument(name='text', type=str, location='form', help='Text to be processed (PREFERENCE)')
-parser_tagger.add_argument(name='file', location='files', help='File to be processed')
+parser_tagger.add_argument(name='file', type=FileStorage, location='files', help='File to be processed')
+parser_tagger.add_argument(name='knowledgebase', type=str, location='form', help='To filter the tagger results by knowledge base.')
+
+
+parser_kb = reqparse.RequestParser()
+parser_kb.add_argument('knowledgebase', type=str, location='args', help='To filter the topics by knowledge base.')
+
+parser_footprint_by_topic = reqparse.RequestParser()
+parser_footprint_by_topic.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
+
+parser_footprint_by_deputy = reqparse.RequestParser()
+parser_footprint_by_deputy.add_argument('deputy', type=str, required=True, location='args', help='To get the values, check out /deputies')
+
+parser_footprint_by_parliamentarygroup = reqparse.RequestParser()
+parser_footprint_by_parliamentarygroup.add_argument('parliamentarygroup', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
+
+
+class ParameterBag():
+
+    EMPTY_VALUES = ['', None, []]
+
+    def __init__(self, params):
+        self.params = params
+        self.clean_params()
+
+    def clean_params(self):
+        for key, value in self.params.copy().items():
+            if value in self.EMPTY_VALUES:
+                self.clean_params_for_attr(key)
+
+    def get(self, attrname, type=str, default='', clean=False):
+        if attrname in self.params:
+            attr = self.params[attrname]
+            if clean:
+                self.clean_params_for_attr(attrname)
+            return type(attr)
+        return default
+
+    def clean_params_for_attr(self, attrname=''):
+        if attrname in self.params:
+            del self.params[attrname]
+
+    def parse(self, field_parsers):
+
+        temp_params = self.params.copy()
+        for key, value in temp_params.items():
+            del self.params[key]
+            if key in field_parsers:
+                self.params.update(field_parsers[key].get_search_for(key, value))
+
+    def moveToTagged(self):
+        if 'topics' in self.params:
+            self.params['tagged.topics'] = self.params['topics']
+            del self.params['topics']
+        if 'tags' in self.params:
+            self.params['tagged.tags'] = self.params['tags']
+            del self.params['tags']
+
+    def join_tags(self):
+        tags = [] if 'tags' not in self.params else self.params['tags']
+        subtopics = [] if 'subtopics' not in self.params else self.params['subtopics']
+        self.clean_params_for_attr('tags')
+        self.clean_params_for_attr('subtopics')
+        self.params['tags'] = {
+            'tags': tags,
+            'subtopics': subtopics
+        }
+
+    def join_dates(self):
+        if 'startdate' not in self.params:
+            self.params['startdate'] = ''
+        if 'enddate' not in self.params:
+            self.params['enddate'] = ''
+        self.params['date'] = "{}_{}".format(
+                self.params['startdate'],
+                self.params['enddate']
+                )
+        self.clean_params_for_attr('startdate')
+        self.clean_params_for_attr('enddate')
+
+    @property
+    def all(self):
+        return self.params
+
+    def get_kb(self):
+        kb_param = self.get('knowledgebase', str, False, True)
+        kb = kb_param.split(',') if kb_param else kb_param
+        if not kb:
+            kb = KnowledgeBases.get_public()
+        return kb
 
 class SearchInitiativeParser:
 
@@ -73,10 +168,10 @@ class SearchInitiativeParser:
         def get_search_for(key, value):
             return {key: value}
 
-    class TitleFieldParser():
+    class TextFieldParser():
         @staticmethod
         def get_search_for(key, value):
-            return {key: {'$regex': value, '$options': 'gi'}}
+            return {'$text': {'$search': "\"{}\"".format(value)}}
 
     class TypeFieldParser():
         @staticmethod
@@ -89,7 +184,7 @@ class SearchInitiativeParser:
                         codes.append(InitiativeType.objects.get(name=clean)['id'])
                     except Exception:
                         pass
-                return { 'initiative_type': { '$in': codes } }
+                return {'initiative_type': {'$in': codes}}
             else:
                 value = value[0].replace("'", "")
             try:
@@ -150,74 +245,29 @@ class SearchInitiativeParser:
             return date_query
 
     PARSER_BY_PARAMS = {
-            'topic': TopicFieldParser,
-            'tags': CombinedTagsFieldParser,
-            'author': AuthorFieldParser,
-            'deputy': DeputyFieldParser,
-            'date': CombinedDateFieldParser,
-            'place': DefaultFieldParser,
-            'reference': DefaultFieldParser(),
-            'type': TypeFieldParser(),
-            'status': DefaultFieldParser(),
-            'title': TitleFieldParser(),
-            }
-
-    EMPTY_VALUES = ['', None, []]
+        'topic': TopicFieldParser,
+        'tags': CombinedTagsFieldParser,
+        'author': AuthorFieldParser,
+        'deputy': DeputyFieldParser,
+        'date': CombinedDateFieldParser,
+        'place': DefaultFieldParser,
+        'reference': DefaultFieldParser(),
+        'type': TypeFieldParser(),
+        'status': DefaultFieldParser(),
+        'text': TextFieldParser(),
+    }
 
     def __init__(self, params):
-        self._params = params
-        self._clean_params()
-        self._per_page = self._return_attr_in_params(attrname='per_page', type=int, default=20, clean=True)
-        self._page = self._return_attr_in_params(attrname='page', type=int, default=1, clean=True)
-        self._serializer = self._return_attr_in_params(attrname='serializer', type=str, default='', clean=True)
-        self._join_tags_and_subtopics_in_params()
-        self._join_dates_in_params()
-        self._parse_params()
+        self._params = ParameterBag(params)
+        self._per_page = self._params.get('per_page', int, 20, True)
+        self._page = self._params.get('page', int, 1, True)
+        self._serializer = self._params.get('serializer', str, '', True)
+        self.kb = self._params.get_kb()
 
-    def _clean_params(self):
-        for key, value in self._params.copy().items():
-            if value in self.EMPTY_VALUES:
-                self._clean_params_for_attr(key)
-
-    def _parse_params(self):
-        temp_params = self._params.copy()
-        for key, value in temp_params.items():
-            del self._params[key]
-            self._params.update(self.PARSER_BY_PARAMS[key].get_search_for(key, value))
-
-    def _return_attr_in_params(self, attrname='', type=str, default='', clean=False):
-        if attrname in self._params:
-            attr = self._params[attrname]
-            if clean:
-                self._clean_params_for_attr(attrname)
-            return type(attr)
-        return default
-
-    def _clean_params_for_attr(self, attrname=''):
-        if attrname in self._params:
-            del self._params[attrname]
-
-    def _join_tags_and_subtopics_in_params(self):
-        tags = [] if 'tags' not in self._params else self._params['tags']
-        subtopics = [] if 'subtopics' not in self._params else self._params['subtopics']
-        self._clean_params_for_attr('tags')
-        self._clean_params_for_attr('subtopics')
-        self._params['tags'] = {
-                'tags': tags,
-                'subtopics': subtopics
-                }
-
-    def _join_dates_in_params(self):
-        if 'startdate' not in self._params:
-            self._params['startdate'] = ''
-        if 'enddate' not in self._params:
-            self._params['enddate'] = ''
-        self._params['date'] = "{}_{}".format(
-                self._params['startdate'],
-                self._params['enddate']
-                )
-        self._clean_params_for_attr('startdate')
-        self._clean_params_for_attr('enddate')
+        self._params.join_tags()
+        self._params.join_dates()
+        self._params.parse(self.PARSER_BY_PARAMS)
+        self._params.moveToTagged()
 
     @property
     def per_page(self):
@@ -229,7 +279,7 @@ class SearchInitiativeParser:
 
     @property
     def params(self):
-        return self._params
+        return self._params.all
 
     @property
     def serializer(self):
@@ -240,9 +290,11 @@ class SearchInitiativeParser:
         return InitiativeSchema
 
 class InitiativeParser():
+
     def __init__(self, params):
-        self._params = params
-        self._serializer = self._return_attr_in_params(attrname='serializer', type=str, default='')
+        self._params = ParameterBag(params)
+        self._serializer = self._params.get('serializer')
+        self.kb = self._params.get_kb()
 
     @property
     def serializer(self):
@@ -251,9 +303,3 @@ class InitiativeParser():
         if self._serializer == 'full':
             return InitiativeExtendedSchema
         return InitiativeNoContentSchema
-
-    def _return_attr_in_params(self, attrname='', type=str, default=''):
-        if attrname in self._params:
-            attr = self._params[attrname]
-            return type(attr)
-        return default

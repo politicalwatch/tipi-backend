@@ -31,5 +31,6 @@ class DeputyItem(Resource):
         """Returns details of a deputy."""
         try:
             return get_deputy(id)
-        except Exception:
+        except Exception as e:
+            log.error(e)
             return {'Error': 'No deputy found'}, 404

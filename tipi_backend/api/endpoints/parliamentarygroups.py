@@ -31,5 +31,6 @@ class ParliamentaryGroupItem(Resource):
         """Returns details of a parliamentary group."""
         try:
             return get_parliamentarygroup(id)
-        except Exception:
+        except Exception as e:
+            log.error(e)
             return {'Error': 'No parliamentary group found'}, 404

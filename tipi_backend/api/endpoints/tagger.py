@@ -9,15 +9,36 @@ from flask import request, abort
 from flask_restplus import Namespace, Resource
 
 import tipi_tasks
-from tipi_backend.api.business import get_tags
+from tipi_backend.api.business import get_tags, get_kbs
 from tipi_backend.api.endpoints import cache, limiter
-from tipi_backend.api.parsers import parser_tagger
+from tipi_backend.api.parsers import parser_tagger, parser_kb
 from tipi_backend.settings import Config
 
 
 log = logging.getLogger(__name__)
 
 ns = Namespace('tagger', description='Operations related to tag texts using our knowledge base')
+
+
+def filter_tags(result, kb):
+    topics = result['result']['topics']
+    tags = result['result']['tags']
+    new_topics = []
+    new_tags = []
+    for tag in tags:
+        if tag['knowledgebase'] in kb:
+            new_tags.append(tag)
+            new_topics.append(tag['topic'])
+    new_topics = list(set(new_topics))
+    result['result']['topics'] = new_topics
+    result['result']['tags'] = new_tags
+
+    return result
+
+def remove_fields(result):
+    tags = result['result']['tags']
+    for tag in tags:
+        del tag['public']
 
 
 @ns.route('/')
@@ -27,6 +48,9 @@ class TaggerExtractor(Resource):
     def post(self):
         """Returns a list of topics and tags matching the text."""
         try:
+            args = parser_tagger.parse_args(request)
+            kb = get_kbs(args)
+
             cache_key = Config.CACHE_TAGS
             tags = cache.get(cache_key)
             if tags is None:
@@ -35,11 +59,11 @@ class TaggerExtractor(Resource):
             tags = codecs.encode(pickle.dumps(tags), "base64").decode()
             tipi_tasks.init()
             text = ''
-            if 'text' in request.form and request.form['text']:
-                text = request.form['text']
+            if 'text' in args and args['text']:
+                text = args['text']
             else:
-                if 'file' in request.files:
-                    file_input = request.files['file']
+                if 'file' in args:
+                    file_input = args['file']
                     with tempfile.NamedTemporaryFile(prefix='tipiscanner_', suffix=splitext(file_input.filename)[1]) as f:
                         f.write(file_input.stream.read())
                         text = process(f.name).decode('utf-8').strip()
@@ -59,6 +83,9 @@ class TaggerExtractor(Resource):
                         }
             else:
                 result = tipi_tasks.tagger.extract_tags_from_text(text, tags)
+                result = filter_tags(result, kb)
+                remove_fields(result)
+
             return result
         except Exception as e:
             if hasattr(e, 'code') and hasattr(e, 'description'):
@@ -70,12 +97,23 @@ class TaggerExtractor(Resource):
 @ns.route('/result/<id>')
 @ns.param(name='id', description='Task id', type=str, required=True, location=['path'], help='Invalid identifier')
 @ns.response(404, 'Task not found.')
+@ns.expect(parser_kb)
 class TaggerResult(Resource):
 
     def get(self, id):
         """Returns tagging task's result"""
         try:
             tipi_tasks.init()
-            return tipi_tasks.tagger.check_status_task(id)
-        except Exception:
+            result = tipi_tasks.tagger.check_status_task(id)
+
+            args = parser_kb.parse_args(request)
+            kb = get_kbs(args)
+
+            if result['status'] == 'SUCCESS':
+                result = filter_tags(result, kb)
+                remove_fields(result)
+
+            return result
+        except Exception as e:
+            log.error(e)
             return {'Error': 'No task found'}, 404

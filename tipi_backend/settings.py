@@ -3,7 +3,6 @@ from os import environ as env
 
 class Config:
     # Flask settings
-    SERVER_NAME = env.get('SERVER_NAME', 'localhost:5000')
     FLASK_DEBUG = env.get('FLASK_DEBUG', 'True') == 'True'  # Do not use debug mode in production)
     IP = env.get('IP', '0.0.0.0')
     PORT = env.get('PORT', 5000)
