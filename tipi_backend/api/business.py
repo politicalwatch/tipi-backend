@@ -301,11 +301,16 @@ def save_scanned(payload):
         id=generate_id(payload['title'], payload['excerpt'], str(datetime.now())),
         title=payload['title'],
         excerpt=payload['excerpt'],
-        result=ast.literal_eval(payload['result']),
         created=datetime.now(),
         expiration=datetime.fromtimestamp(expiration),
         verified=payload['verified']
     )
+
+    result = payload['result']
+    serialized_result = json.loads(result)
+    tags = serialized_result['tags']
+    for tag in tags:
+        scanned.add_tag(tag['knowledgebase'], tag['topic'], tag['subtopic'], tag['tag'], tag['times'])
 
     saved = scanned.save()
     if not saved:
