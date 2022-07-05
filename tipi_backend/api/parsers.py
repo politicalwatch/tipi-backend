@@ -12,24 +12,6 @@ from tipi_backend.api.validators import validate_date
 from tipi_backend.settings import Config
 
 
-parser_all_initiatives = reqparse.RequestParser()
-# Common parameters
-parser_all_initiatives.add_argument('page', type=int, default=1, location='args', help='Page number')
-parser_all_initiatives.add_argument('per_page', type=int, default=20, location='args', help='Initiatives per page')
-# Initiative parameters
-parser_all_initiatives.add_argument('title', type=str, location='args')
-parser_all_initiatives.add_argument('status', type=str, location='args', help='To get the values, check out /initiative-status')
-parser_all_initiatives.add_argument('type', type=str, action='append', location='args', help='To get the values, check out /initiative-type')
-parser_all_initiatives.add_argument('reference', type=str, location='args')
-parser_all_initiatives.add_argument('place', type=str, location='args')
-parser_all_initiatives.add_argument('enddate', type=str, location='args', help='Date format must be yyyy-mm-dd')
-parser_all_initiatives.add_argument('startdate', type=str, location='args', help='Date format must be yyyy-mm-dd')
-parser_all_initiatives.add_argument('deputy', type=str, location='args', help='To get the values, check out /deputies')
-parser_all_initiatives.add_argument('author', type=str, location='args', help='To get the values, check out /parliamentary-groups')
-parser_all_initiatives.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full(default), no-content, simple')
-parser_all_initiatives.add_argument('page', type=int, default=1, location='args', help='Page number')
-parser_all_initiatives.add_argument('per_page', type=int, default=20, location='args', help='Initiatives per page')
-
 parser_initiatives = reqparse.RequestParser()
 # Common parameters
 parser_initiatives.add_argument('page', type=int, default=1, location='args', help='Page number')
