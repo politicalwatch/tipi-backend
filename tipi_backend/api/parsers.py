@@ -31,6 +31,7 @@ parser_initiatives.add_argument('subtopics', type=str, action='append', location
 parser_initiatives.add_argument('topic', type=str, location='args', help='To get the values, check out /topics')
 parser_initiatives.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full(default), no-content, simple')
 parser_initiatives.add_argument('knowledgebase', type=str, location='args', help='To filter the tagged results of the initiatives.')
+parser_initiatives.add_argument('ignoretagless', type=bool, default=False, location='args', help='Use this boolean to remove the results that are tagged but do not have any positive tag result.')
 
 parser_initiative = reqparse.RequestParser()
 parser_initiative.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full, no-content(default), simple')
@@ -76,6 +77,7 @@ class ParameterBag():
     def __init__(self, params):
         self.params = params
         self.clean_params()
+        self.kb = False
 
     def clean_params(self):
         for key, value in self.params.copy().items():
@@ -132,16 +134,26 @@ class ParameterBag():
         self.clean_params_for_attr('startdate')
         self.clean_params_for_attr('enddate')
 
+    def ignore_tagless(self):
+        if 'tagged' in self.params and '$elemMatch' in self.params['tagged']:
+            kb = self.get_kb()
+            self.params['tagged']['$elemMatch']['knowledgebase'] = kb
+
     @property
     def all(self):
         return self.params
 
     def get_kb(self):
+        if self.kb:
+            return self.kb
+
         kb_param = self.get('knowledgebase', str, False, True)
-        kb = kb_param.split(',') if kb_param else kb_param
+        is_multiple = ',' in kb_param
+        kb = kb_param.split(',') if is_multiple else kb_param
         if not kb:
             kb = KnowledgeBases.get_public()
-        return kb
+        self.kb = kb
+        return self.kb
 
 class SearchInitiativeParser:
 
@@ -205,6 +217,13 @@ class SearchInitiativeParser:
         def get_search_for(key, value):
             return {'author_deputies': value}
 
+    class IgnoreTaglessFieldParser():
+        @staticmethod
+        def get_search_for(key, value):
+            if value:
+                return {'tagged': {'$elemMatch': { 'tags.0': {'$exists': True}}}}
+            return {}
+
     class CombinedDateFieldParser():
         @staticmethod
         def get_search_for(key, value):
@@ -237,6 +256,7 @@ class SearchInitiativeParser:
         'type': TypeFieldParser(),
         'status': DefaultFieldParser(),
         'text': TextFieldParser(),
+        'ignoretagless': IgnoreTaglessFieldParser(),
     }
 
     def __init__(self, params):
@@ -249,6 +269,7 @@ class SearchInitiativeParser:
         self._params.join_tags()
         self._params.join_dates()
         self._params.parse(self.PARSER_BY_PARAMS)
+        self._params.ignore_tagless()
         self._params.moveToTagged()
 
     @property
