@@ -147,7 +147,7 @@ class ParameterBag():
         if self.kb:
             return self.kb
 
-        kb_param = self.get('knowledgebase', str, False, True)
+        kb_param = self.get('knowledgebase', str, "", True)
         is_multiple = ',' in kb_param
         kb = kb_param.split(',') if is_multiple else kb_param
         if not kb:
