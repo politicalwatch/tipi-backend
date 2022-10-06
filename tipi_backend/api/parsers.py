@@ -105,9 +105,16 @@ class ParameterBag():
                 self.params.update(field_parsers[key].get_search_for(key, value))
 
     def moveToTagged(self):
+        if 'topics' in self.params and 'tags' in self.params:
+            self.params['tagged.tags'] = self.params['tags']
+            self.params['tagged.tags']['$elemMatch']['topic'] = self.params['topics']
+            del self.params['topics']
+            del self.params['tags']
+
         if 'topics' in self.params:
             self.params['tagged.topics'] = self.params['topics']
             del self.params['topics']
+
         if 'tags' in self.params:
             self.params['tagged.tags'] = self.params['tags']
             del self.params['tags']
