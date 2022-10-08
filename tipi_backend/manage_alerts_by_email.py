@@ -1,11 +1,14 @@
+import logging
 import json
 
-from os import environ as env
-from flask import Blueprint, render_template 
-from tipi_data.models.alert import Alert, Search
+from flask import Blueprint, render_template
+from tipi_data.models.alert import Alert
 
+
+log = logging.getLogger(__name__)
 
 alerts_by_email_blueprint = Blueprint('manage_alerts_by_email', __name__)
+
 
 def custom_render_template(template, name='QHLD'):
     return render_template(
@@ -46,7 +49,8 @@ def validate_email_alert(hashed_email, hashed_search):
         if not alert:
             return custom_render_template('validate/validate_email_timeout.html')
         return custom_render_template('validate/validate_email_success.html', get_project_name(alert))
-    except:
+    except Exception as e:
+        log.error(e)
         return custom_render_template('validate/validate_email_error.html')
 
 
