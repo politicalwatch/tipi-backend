@@ -57,6 +57,10 @@ def validate_email_alert(hashed_email, hashed_search):
 @alerts_by_email_blueprint.route('/emails/unsubscribe/<hashed_email>/<hashed_search>', methods=['GET'])
 def unsubscribe_email_alert(hashed_email, hashed_search):
     try:
+        alert = Alert.objects(
+                id=hashed_email,
+                searches__hash=hashed_search
+        ).first()
         Alert.objects(
                 id=hashed_email,
                 searches__hash=hashed_search
@@ -64,14 +68,10 @@ def unsubscribe_email_alert(hashed_email, hashed_search):
                 pull__searches__hash=hashed_search,
                 full_result=True
             )
-        updated = Alert.objects(
-                id=hashed_email,
-                searches__hash=hashed_search
-        ).first()
-        if not updated:
-            return custom_render_template('unsubscribe/unsubscribe_email_error.html')
         return custom_render_template('unsubscribe/unsubscribe_email_success.html', get_project_name(alert))
     except Alert.DoesNotExist:
+        log.error("Alert to unsubscribe does not exist")
         return custom_render_template('unsubscribe/unsubscribe_email_error.html')
     except Alert.MultipleObjectsReturned:
+        log.error("Multiple object returned when unsubscribing the alert")
         return custom_render_template('unsubscribe/unsubscribe_email_error.html')
