@@ -5,6 +5,7 @@ class InitiativeStatusManager():
                 'Aprobada',
                 'Respondida',
                 'Celebrada',
+                'Convalidada',
                 'Convertida en otra',
                 'Acumulada en otra',
                 'En tramitación',
