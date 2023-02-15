@@ -3,7 +3,7 @@ Flask-Cors==3.0.8
 Flask-Limiter==1.1.0
 Flask==1.1.1
 flask-restplus==0.13.0
-Werkzeug==0.16.1
+Werkzeug==2.2.3
 git+https://github.com/politicalwatch/tipi-tasks.git
 git+https://github.com/politicalwatch/tipi-data.git
 gunicorn==20.0.4
