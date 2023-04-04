@@ -2,10 +2,8 @@ import logging.config
 import os
 from os import environ as env
 
-import sentry_sdk
 from flask import Flask, Blueprint
 from flask_cors import CORS
-from sentry_sdk.integrations.flask import FlaskIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from tipi_backend.settings import Config
@@ -27,17 +25,7 @@ from tipi_backend.api.endpoints.scanned import ns as scanned_namespace
 from tipi_backend.api.restplus import api
 
 
-def add_sentry():
-    SENTRY_DSN = env.get('SENTRY_DSN', None)
-    if SENTRY_DSN:
-        sentry_sdk.init(
-            dsn=SENTRY_DSN,
-            integrations=[FlaskIntegration()]
-        )
-
-
 def create_app(config=Config):
-    add_sentry()
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
     app.config.from_object(config)
