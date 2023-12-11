@@ -11,6 +11,7 @@ class InitiativeStatusManager():
                 'En tramitación',
                 'No admitida a trámite',
                 'No debatida',
+                'Caducada',
                 'Rechazada',
                 'Derogada',
                 'Retirada',
