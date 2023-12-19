@@ -42,6 +42,10 @@ parser_stats.add_argument('topic', type=str, required=True, location='args', hel
 parser_stats.add_argument('subtopic', type=str, location='args', help='To get the values, check out /topics/id')
 parser_stats.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')
 
+parser_stats_by_topic = reqparse.RequestParser()
+parser_stats_by_topic.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
+parser_stats_by_topic.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')
+
 parser_stats_by_group = reqparse.RequestParser()
 parser_stats_by_group.add_argument('parliamentarygroup', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
 parser_stats_by_group.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')

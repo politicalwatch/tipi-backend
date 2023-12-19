@@ -198,6 +198,17 @@ def get_topics_by_parliamentarygroup_stats(params):
             alg=ns.IGNORECASE
             )
 
+def get_topics_by_week_stats(params):
+    result = []
+    stats = json.loads(Stats.objects()[0].to_json())
+    for kb in KnowledgeBases.get_public():
+        if kb != params['knowledgebase']:
+            continue
+        result = list(filter(lambda x: x['_id'] == params['topic'], stats['topicsByWeek'][kb]))
+    if len(result) > 0:
+        return result[0]['byWeek']
+    return result
+
 
 """ KNOWLEDGEBASE METHODS """
 
