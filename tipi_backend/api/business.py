@@ -198,6 +198,10 @@ def get_topics_by_parliamentarygroup_stats(params):
             alg=ns.IGNORECASE
             )
 
+def get_by_week_stats():
+    stats = json.loads(Stats.objects()[0].to_json())
+    return stats['byWeek']
+
 def get_topics_by_week_stats(params):
     result = []
     stats = json.loads(Stats.objects()[0].to_json())

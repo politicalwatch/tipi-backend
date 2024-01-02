@@ -15,6 +15,7 @@ from tipi_backend.api.business import \
         get_parliamentarygroups_stats, \
         get_places_stats, \
         get_topics_by_parliamentarygroup_stats, \
+        get_by_week_stats, \
         get_topics_by_week_stats
 
 
@@ -76,11 +77,18 @@ class TopicsByParliamentaryGroupStats(Resource):
         args = parser_stats_by_group.parse_args(request)
         return get_topics_by_parliamentarygroup_stats(args)
 
+@ns.route('/by-week')
+class ByWeekStats(Resource):
+
+    def get(self):
+        """Returns initiatives by week stats."""
+        return get_by_week_stats()
+
 @ns.route('/topics-by-week')
 @ns.expect(parser_stats_by_topic)
 class TopicsByWeekStats(Resource):
 
     def get(self):
-        """Returns topics by week stats."""
+        """Returns topics' initiatives by week stats."""
         args = parser_stats_by_topic.parse_args(request)
         return get_topics_by_week_stats(args)
