@@ -53,7 +53,7 @@ parser_stats_by_group.add_argument('knowledgebase', type=str, location='args', h
 
 parser_authors = reqparse.RequestParser()
 parser_authors.add_argument('name', type=str, location='args', help='Send a name')
-
+parser_authors.add_argument('compact', type=bool, default=False, location='args', help='Compact response without footprints')
 
 parser_tagger = reqparse.RequestParser()
 parser_tagger.add_argument(name='text', type=str, location='form', help='Text to be processed (PREFERENCE)')

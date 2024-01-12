@@ -26,10 +26,10 @@ from tipi_data.repositories.tags import Tags
 from tipi_data.repositories.topics import Topics
 from tipi_data.repositories.footprints import Footprints
 from tipi_data.repositories.votings import Votings
-from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema
+from tipi_data.schemas.deputy import DeputySchema, DeputyExtendedSchema, DeputyCompactSchema
 from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_data.schemas.initiative_type import InitiativeTypeSchema
-from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema
+from tipi_data.schemas.parliamentarygroup import ParliamentaryGroupSchema, ParliamentaryGroupCompactSchema
 from tipi_data.schemas.place import PlaceSchema
 from tipi_data.schemas.voting import VotingSchema
 from tipi_data.schemas.footprint import FootprintByTopicSchema, \
@@ -60,6 +60,11 @@ def get_topic(id):
 def get_deputies(params):
     if params['name'] is None:
         del(params['name'])
+    is_compact = params['compact']
+    del(params['compact'])
+    
+    if is_compact:
+        return DeputyCompactSchema(many=True).dump(Deputy.objects(__raw__=params))
     return DeputySchema(many=True).dump(Deputy.objects(__raw__=params))
 
 def get_deputy(id):
@@ -71,6 +76,11 @@ def get_deputy(id):
 def get_parliamentarygroups(params):
     if params['name'] is None:
         del(params['name'])
+    is_compact = params['compact']
+    del(params['compact'])
+        
+    if is_compact:
+        return ParliamentaryGroupCompactSchema(many=True).dump(ParliamentaryGroup.objects(__raw__=params))
     return ParliamentaryGroupSchema(many=True).dump(ParliamentaryGroup.objects(__raw__=params))
 
 def get_parliamentarygroup(id):
