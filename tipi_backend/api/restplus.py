@@ -4,7 +4,7 @@ from os import environ as env
 
 
 from flask import current_app
-from flask_restplus import Api
+from flask_restx import Api
 from tipi_data import DoesNotExist
 
 

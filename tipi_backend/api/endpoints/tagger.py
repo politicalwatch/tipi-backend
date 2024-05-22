@@ -6,7 +6,7 @@ from os.path import splitext
 import tempfile
 
 from flask import request, abort
-from flask_restplus import Namespace, Resource
+from flask_restx import Namespace, Resource
 
 import tipi_tasks
 from tipi_backend.api.business import get_tags, get_kbs

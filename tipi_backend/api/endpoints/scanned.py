@@ -2,7 +2,7 @@ import logging
 import json
 
 from flask import request, abort
-from flask_restplus import Namespace, Resource, fields
+from flask_restx import Namespace, Resource, fields
 
 from tipi_backend.api.business import save_scanned, get_scanned, search_verified_scanned
 from tipi_backend.api.endpoints import limiter

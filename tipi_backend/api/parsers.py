@@ -2,7 +2,7 @@ import datetime
 from importlib import import_module as im
 
 from werkzeug.datastructures import FileStorage
-from flask_restplus import reqparse
+from flask_restx import reqparse
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
 from tipi_data.models.initiative_type import InitiativeType
 from tipi_data.repositories.knowledgebases import KnowledgeBases

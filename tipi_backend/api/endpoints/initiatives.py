@@ -2,7 +2,7 @@ import logging
 import json
 
 from flask import request
-from flask_restplus import Namespace, Resource
+from flask_restx import Namespace, Resource
 from tipi_data.models.searches_tracker import SearchesTracker
 
 from tipi_backend.api.parsers import parser_initiative, parser_initiatives

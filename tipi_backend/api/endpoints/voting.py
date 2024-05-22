@@ -1,6 +1,6 @@
 import logging
 
-from flask_restplus import Namespace, Resource
+from flask_restx import Namespace, Resource
 
 from tipi_backend.api.business import get_voting
 

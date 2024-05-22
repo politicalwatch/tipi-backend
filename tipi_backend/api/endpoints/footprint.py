@@ -1,7 +1,7 @@
 import logging
 
 from flask import request
-from flask_restplus import Namespace, Resource
+from flask_restx import Namespace, Resource
 
 from tipi_backend.api.parsers import parser_footprint_by_topic, \
         parser_footprint_by_deputy, \
