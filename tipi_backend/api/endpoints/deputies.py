@@ -3,9 +3,10 @@ import logging
 from flask import request
 from flask_restx import Namespace, Resource
 
-# from tipi_backend.api.endpoints import cache
 from tipi_backend.api.parsers import parser_authors
 from tipi_backend.api.business import get_deputies, get_deputy
+from tipi_backend.api.endpoints import cache
+from tipi_backend.settings import Config
 
 
 log = logging.getLogger(__name__)
@@ -20,7 +21,12 @@ class DeputiesCollection(Resource):
     def get(self):
         """Returns list of active deputies."""
         args = parser_authors.parse_args(request)
-        return get_deputies(args)
+        cache_key = Config.CACHE_DEPUTIES
+        deputies = cache.get(cache_key)
+        if deputies is None:
+            deputies = get_deputies(args)
+            cache.set(cache_key, deputies, timeout=60*60)
+        return deputies
 
 
 @ns.route('/<id>')

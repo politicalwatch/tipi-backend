@@ -5,7 +5,8 @@ from flask_restx import Namespace, Resource
 
 from tipi_backend.api.parsers import parser_authors
 from tipi_backend.api.business import get_parliamentarygroups, get_parliamentarygroup
-
+from tipi_backend.api.endpoints import cache
+from tipi_backend.settings import Config
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +20,12 @@ class ParliamentaryGroupsCollection(Resource):
     def get(self):
         """Returns list of parliamentary groups."""
         args = parser_authors.parse_args(request)
-        return get_parliamentarygroups(args)
+        cache_key = Config.CACHE_GROUPS
+        parliamentary_groups = cache.get(cache_key)
+        if parliamentary_groups is None:
+            parliamentary_groups = get_parliamentarygroups(args)
+            cache.set(cache_key, parliamentary_groups, timeout=60*60)
+        return parliamentary_groups
 
 
 @ns.route('/<id>')

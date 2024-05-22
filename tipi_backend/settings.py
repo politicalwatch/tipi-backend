@@ -26,7 +26,7 @@ class Config:
 
     # Redis caching
     CACHE = {
-        'CACHE_TYPE': env.get('CACHE_TYPE', 'redis'),
+        'CACHE_TYPE': env.get('CACHE_TYPE', 'RedisCache'),
         'CACHE_DEFAULT_TIMEOUT': int(env.get('CACHE_DEFAULT_TIMEOUT', '600')),
         'CACHE_KEY_PREFIX': env.get('CACHE_KEY_PREFIX', ''),
         'CACHE_REDIS_HOST': env.get('CACHE_REDIS_HOST', 'redis'),
@@ -38,4 +38,6 @@ class Config:
     # App
     MAX_CONTENT_LENGTH = eval(env.get('MAX_CONTENT_LENGTH', '20*1024*1024'))
     CACHE_TAGS = env.get('CACHE_TAGS', 'tagging-tags')
+    CACHE_GROUPS = env.get('CACHE_GROUPS', 'parliamentary-groups')
+    CACHE_DEPUTIES = env.get('CACHE_DEPUTIES', 'deputies')
     TAGGER_MAX_WORDS = int(env.get('TAGGER_MAX_WORDS', '2500'))
