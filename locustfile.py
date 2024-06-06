@@ -1,31 +1,31 @@
-from locust import HttpLocust, TaskSet, task, between
+from locust import HttpUser, TaskSet, task, between
 
 
-HOST = 'http://localhost:5000'
+HOST = "http://localhost:5000"
 
 
 class LabelingBehavior(TaskSet):
     def on_start(self):
-        """ on_start is called when a Locust start before any task is scheduled """
+        """on_start is called when a Locust start before any task is scheduled"""
         pass
 
     def on_stop(self):
-        """ on_stop is called when the TaskSet is stopping """
+        """on_stop is called when the TaskSet is stopping"""
         pass
 
     def _labeling(self, size=100):
-        """ Size can be: 100, 500, 1000, 2000 and 5000 """
-        filename = 'tests/tipi-backend/api/scanner_text/w{}.txt'.format(size)
-        with open(filename, 'r') as f:
+        """Size can be: 100, 500, 1000, 2000 and 5000"""
+        filename = "tests/tipi-backend/api/scanner_text/w{}.txt".format(size)
+        with open(filename, "r") as f:
             text = f.read()
-        self.client.post('/labels/extract', data={'text': text})
+        self.client.post("/labels/extract", data={"text": text})
 
     @task(1)
     def labeling(self):
         self._labeling(100)
 
 
-class Labeling(HttpLocust):
+class Labeling(HttpUser):
     host = HOST
     task_set = LabelingBehavior
     wait_time = between(5, 30)
