@@ -133,21 +133,15 @@ def search_initiatives(params):
 
 def get_initiative(id, params):
     parser = InitiativeParser(params)
-    print(parser)
     serializer = parser.serializer
-    print(serializer)
     kb = parser.kb
-    print(kb)
     return serializer(kb=kb).dump(Initiatives.get(id=id))
 
 
 def get_initiative_old(id, params):
     parser = InitiativeParser(params)
-    print(parser)
     serializer = parser.serializer
-    print(serializer)
     kb = parser.kb
-    print(kb)
     return serializer(kb=kb).dump(Initiatives.get_old(id=id))
 
 

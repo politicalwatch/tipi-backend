@@ -3,4 +3,4 @@ ipdb==0.13.13
 parameterized==0.9.0
 pytest==5.4.3
 pytest-cov==2.12.1
-locust==1.6.0
+locust==2.25.0
