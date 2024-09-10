@@ -4,7 +4,7 @@ from flask import request
 from flask_restx import Namespace, Resource
 
 from tipi_backend.api.parsers import parser_authors
-from tipi_backend.api.business import get_deputies, get_deputy
+from tipi_backend.api.business import get_deputies, get_deputy, get_deputies_birthdays
 from tipi_backend.api.endpoints import cache
 from tipi_backend.settings import Config
 
@@ -41,3 +41,11 @@ class DeputyItem(Resource):
         except Exception as e:
             log.error(e)
             return {'Error': 'No deputy found'}, 404
+
+
+@ns.route('/birthdays')
+class DeputiesBirthdaysCollection(Resource):
+
+    def get(self):
+        """Returns a list of deputies whose birthday is today"""
+        return get_deputies_birthdays()

@@ -31,6 +31,7 @@ from tipi_data.schemas.deputy import (
     DeputyExtendedSchema,
     DeputyCompactSchema,
 )
+from tipi_data.repositories.deputies import Deputies
 from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_data.schemas.initiative_type import InitiativeTypeSchema
 from tipi_data.schemas.parliamentarygroup import (
@@ -82,6 +83,10 @@ def get_deputies(params):
 
 def get_deputy(id):
     return DeputyExtendedSchema().dump(Deputy.objects.get(id=id))
+
+
+def get_deputies_birthdays():
+    return DeputySchema(many=True).dump(Deputies.get_birthdays())
 
 
 """ PARLIAMENTARY GROUPS METHODS """
