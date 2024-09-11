@@ -43,7 +43,7 @@ class DeputyItem(Resource):
             return {'Error': 'No deputy found'}, 404
 
 
-@ns.route('/birthdays')
+@ns.route('/todays-birthdays')
 class DeputiesBirthdaysCollection(Resource):
 
     def get(self):
