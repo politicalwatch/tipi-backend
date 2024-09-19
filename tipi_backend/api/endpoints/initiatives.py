@@ -9,7 +9,6 @@ from tipi_backend.api.parsers import parser_initiative, parser_initiatives
 from tipi_backend.api.business import (
     search_initiatives,
     get_initiative,
-    get_initiative_old,
 )
 
 
@@ -59,8 +58,4 @@ class InitiativeItem(Resource):
             return get_initiative(id=id, params=args)
         except Exception as e:
             print(e)
-            try:
-                return get_initiative_old(id=id, params=args)
-            except Exception as e:
-                log.error(e)
-                return {"Error": "No initiative found"}, 404
+            return {"Error": "No initiative found"}, 404
