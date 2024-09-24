@@ -42,4 +42,5 @@ class Config:
     CACHE_TAGS = env.get("CACHE_TAGS", "tagging-tags")
     CACHE_GROUPS = env.get("CACHE_GROUPS", "parliamentary-groups")
     CACHE_DEPUTIES = env.get("CACHE_DEPUTIES", "deputies")
+    CACHE_DEPUTIES_COMPACT = env.get("CACHE_DEPUTIES_COMPACT", "deputies-compact")
     TAGGER_MAX_WORDS = int(env.get("TAGGER_MAX_WORDS", "2500"))
