@@ -7,6 +7,7 @@ from tipi_backend.api.parsers import parser_footprint_by_topic, \
         parser_footprint_by_deputy, \
         parser_footprint_by_parliamentarygroup
 from tipi_backend.api.business import get_footprint_by_topic, \
+        get_max_footprint_by_all_topics, \
         get_footprint_by_deputy, \
         get_footprint_by_parliamentarygroup
 
@@ -27,6 +28,17 @@ class FootprintByTopic(Resource):
         except Exception as e:
             log.error(e)
             return {'Error': f"No footprint by topic {args['topic']} found."}, 404
+
+
+@ns.route('/max-by-all-topics')
+class FootprintMaxByAllTopics(Resource):
+    def get(self):
+        """Returns max deputy and parliamentarygroup's footprint by all topics."""
+        try:
+            return get_max_footprint_by_all_topics()
+        except Exception as e:
+            log.error(e)
+            return {'Error': f"No footprints found."}, 404
 
 
 @ns.route('/by-deputy')
