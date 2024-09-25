@@ -11,27 +11,35 @@ from tipi_backend.settings import Config
 
 log = logging.getLogger(__name__)
 
-ns = Namespace('deputies', description='Operations related to deputies')
+ns = Namespace("deputies", description="Operations related to deputies")
 
 
-@ns.route('/')
+@ns.route("/")
 @ns.expect(parser_authors)
 class DeputiesCollection(Resource):
 
     def get(self):
         """Returns list of active deputies."""
         args = parser_authors.parse_args(request)
-        cache_key = Config.CACHE_DEPUTIES
+        compact = args.get("compact")
+        cache_key = Config.CACHE_DEPUTIES_COMPACT if compact else Config.CACHE_DEPUTIES
         deputies = cache.get(cache_key)
         if deputies is None:
             deputies = get_deputies(args)
-            cache.set(cache_key, deputies, timeout=60*60)
+            cache.set(cache_key, deputies, timeout=60 * 60)
         return deputies
 
 
-@ns.route('/<id>')
-@ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
-@ns.response(404, 'Deputy not found.')
+@ns.route("/<id>")
+@ns.param(
+    name="id",
+    description="Identifier",
+    type=str,
+    required=True,
+    location=["path"],
+    help="Invalid identifier",
+)
+@ns.response(404, "Deputy not found.")
 class DeputyItem(Resource):
 
     def get(self, id):
@@ -40,10 +48,10 @@ class DeputyItem(Resource):
             return get_deputy(id)
         except Exception as e:
             log.error(e)
-            return {'Error': 'No deputy found'}, 404
+            return {"Error": "No deputy found"}, 404
 
 
-@ns.route('/todays-birthdays')
+@ns.route("/todays-birthdays")
 class DeputiesBirthdaysCollection(Resource):
 
     def get(self):

@@ -143,13 +143,6 @@ def get_initiative(id, params):
     return serializer(kb=kb).dump(Initiatives.get(id=id))
 
 
-def get_initiative_old(id, params):
-    parser = InitiativeParser(params)
-    serializer = parser.serializer
-    kb = parser.kb
-    return serializer(kb=kb).dump(Initiatives.get_old(id=id))
-
-
 def get_places():
     return PlaceSchema(many=True).dump(Place.objects())
 
