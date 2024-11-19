@@ -3,7 +3,7 @@ TIPI BACKEND
 
 ## Requirements
 
-* Python 3.6
+* Python 3.8
 * Virtualenv (created and activated)
 
 
