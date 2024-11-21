@@ -1,6 +1,6 @@
 FROM python:3.8-slim
 
-RUN apt-get update && apt-get install -y git gcc libpcre3-dev poppler-utils tesseract-ocr tesseract-ocr-spa tesseract-ocr-cat antiword
+RUN apt-get update && apt-get install -y git gcc poppler-utils tesseract-ocr tesseract-ocr-spa tesseract-ocr-cat antiword
 RUN pip install pip==24.0
 
 COPY requirements.txt requirements-dev.txt /app/
