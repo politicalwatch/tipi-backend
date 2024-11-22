@@ -30,12 +30,15 @@ for topic in topics:
                     'compiletag': regex.compile('(?i)' + delimiter.join(permutation))
                 })
         else:
-            TAGS.append({
-                'topic': topic['name'],
-                'subtopic': tag['subtopic'],
-                'tag': tag['tag'],
-                'compiletag': regex.compile('(?i)' + tag['regex'])
-            })
+            try:
+                TAGS.append({
+                    'topic': topic['name'],
+                    'subtopic': tag['subtopic'],
+                    'tag': tag['tag'],
+                    'compiletag': regex.compile('(?i)' + tag['regex'])
+                })
+            except regex.error as e:
+                print(e, tag['regex'])
 
 # initialize app
 Config.TESTING = True
