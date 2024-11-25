@@ -7,7 +7,7 @@ Flask==3.1.0
 git+https://github.com/politicalwatch/tipi-data.git
 git+https://github.com/politicalwatch/tipi-tasks.git
 gunicorn==23.0.0
-natsort==7.1.1
+natsort==8.4.0
 newrelic==6.2.0.156
 pdfminer.six==20240706
 python-docx==1.1.2
