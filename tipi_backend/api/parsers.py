@@ -74,6 +74,9 @@ parser_footprint_by_parliamentarygroup = reqparse.RequestParser()
 parser_footprint_by_parliamentarygroup.add_argument('parliamentarygroup', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
 
 
+parser_voting_outliers = reqparse.RequestParser()
+parser_voting_outliers.add_argument('exclude_group', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
+
 class ParameterBag():
 
     EMPTY_VALUES = ['', None, []]

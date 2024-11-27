@@ -51,6 +51,7 @@ from tipi_data.utils import generate_id
 
 from tipi_backend.settings import Config
 from tipi_backend.api.parsers import SearchInitiativeParser, InitiativeParser
+from tipi_backend.api.types import VotingOutlier
 
 
 """ TOPICS METHODS """
@@ -162,6 +163,46 @@ def get_initiative_status():
 
 def get_voting(reference):
     return VotingSchema(many=True).dump(Votings.get_by(reference))
+
+
+def get_voting_outliers(exclude_group: str = None) -> list[VotingOutlier]:
+    """Get voting outliers. Outliers are defined as people who vote differently from their parlamentary group.
+
+    Args:
+        exclude_group (str, optional): . Defaults to None.
+
+    Returns:
+        list[VotingOutlier]: List of voting outliers.
+    """
+    pipeline = [
+        {"$unwind": "$by_groups"},
+        {
+            "$match": {
+                "by_groups.votes.yes": {"$gt": 0},
+                "by_groups.votes.no": {"$gt": 0},
+            }
+        },
+        {
+            "$group": {
+                "_id": "$_id",
+                "reference": {"$first": "$reference"},
+                "title": {"$first": "$title"},
+                "by_groups": {"$push": "$by_groups"},
+            }
+        },
+    ]
+    if exclude_group:
+        pipeline[1]["$match"]["by_groups.name"] = {"$ne": exclude_group}
+
+    outliers = VotingSchema(many=True).dump(Voting.objects.aggregate(*pipeline))
+    def _transform_outlier(outlier: Voting) -> VotingOutlier:
+        return VotingOutlier(
+            reference=outlier["reference"],
+            title=outlier["title"],
+            group_votes=outlier["by_groups"],
+        ).__dict__
+
+    return list(map(_transform_outlier, outliers))
 
 
 """ STATS METHODS """
