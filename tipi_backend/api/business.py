@@ -296,8 +296,9 @@ def get_kbs(args):
 def get_footprint_by_topic(params):
     return FootprintByTopicSchema().dump(Footprints.get_by_topic(params["topic"]))
 
-def get_max_footprint_by_all_topics():
-    return list(Footprints.get_max_by_all_topics())
+
+def get_footprint_range_by_all_topics():
+    return list(Footprints.get_range_by_all_topics())
 
 
 def get_footprint_by_deputy(params):
