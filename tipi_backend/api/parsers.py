@@ -247,13 +247,13 @@ class SearchInitiativeParser:
             ENDDATE = 1
             if date_interval[STARTDATE] == '' and date_interval[ENDDATE] == '':
                 return {}
-            date_query = {'updated': {}}
+            date_query = {'created': {}}
             if date_interval[STARTDATE] != '':
                 if validate_date(date_interval[STARTDATE]):
-                    date_query['updated']['$gte'] = parse_date(date_interval[STARTDATE])
+                    date_query['created']['$gte'] = parse_date(date_interval[STARTDATE])
             if date_interval[ENDDATE] != '':
                 if validate_date(date_interval[ENDDATE]):
-                    date_query['updated']['$lte'] = parse_date(date_interval[ENDDATE])
+                    date_query['created']['$lte'] = parse_date(date_interval[ENDDATE])
             return date_query
 
     PARSER_BY_PARAMS = {
