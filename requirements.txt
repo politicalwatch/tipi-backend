@@ -15,4 +15,4 @@ python-pptx==1.0.2
 python-slugify==8.0.4
 regex==2024.11.6
 Six==1.16.0
-Werkzeug==3.1.3
+Werkzeug==3.1.5
