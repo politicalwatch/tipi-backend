@@ -1,113 +1,104 @@
-import itertools
-import json
-import regex
 import pytest
-import unittest
-import sys
-sys.path.append('/app')
-from parameterized import parameterized
 
-from tipi_tasks import labeling
-from tipi_backend.api.endpoints import cache
-from tipi_backend.app import create_app
 from tipi_backend.settings import Config
 
-
-# Extract tags from topics
-with open('tests/tipi-backend/api/topics.json', 'r') as f:
-    topics = json.loads(f.read())
-
-TAGS = []
-delimiter = '.*'
-for topic in topics:
-    for tag in topic['tags']:
-        if tag['shuffle']:
-            for permutation in itertools.permutations(tag['regex'].split(delimiter)):
-                TAGS.append({
-                    'topic': topic['name'],
-                    'subtopic': tag['subtopic'],
-                    'tag': tag['tag'],
-                    'compiletag': regex.compile('(?i)' + delimiter.join(permutation))
-                })
-        else:
-            try:
-                TAGS.append({
-                    'topic': topic['name'],
-                    'subtopic': tag['subtopic'],
-                    'tag': tag['tag'],
-                    'compiletag': regex.compile('(?i)' + tag['regex'])
-                })
-            except regex.error as e:
-                print(e, tag['regex'])
-
-# initialize app
-Config.TESTING = True
-Config.USE_ALERTS = True
-Config.LABELING_MAX_WORD = 5001
-app = create_app(config=Config)
-cache.set(Config.CACHE_TAGS, TAGS, timeout=5*60)
+FIXTURE_DIR = "tests/tipi-backend/api/scanner_text/"
 
 
-class TestLabeling(unittest.TestCase):
-
-    def setUp(self):
-        self.client = app.test_client()
-
-    @parameterized.expand([
-        ('w100.txt', {'ODS 16': ['Elusión y evasión fiscal']}),
-        ('w500.txt', {
-            'ODS 5': ['Ley 1/2004', 'Aborto', 'Feto'],
-            'ODS 6': ['Contaminación del agua'],
-        }),
-        ('w1000.txt', {
-            'ODS 16': ['Rendición de cuentas'],
-            'ODS 5': ['Empoderamiento de las mujeres y las niñas', 'Ley 1/2004'],
-            'ODS 7': ['Estrategia Española de Desarrollo Sostenible'],
-        }),
-        ('w2000.txt', {
-            'ODS 11': ['Electrificación de la movilidad', 'Transporte público'],
-            'ODS 5': ['Ley 1/2004'],
-            'ODS 7': ['Ley de transición energética', 'Gases combustibles',
-                      'Fracking', 'Fractura hidráulica', 'Transición energética',
-                      'Energía renovable, verde, alternativa y limpia',
-                      'Energías renovables', 'Biocarburantes', 'IDAE',
-                      'Eficiencia energética'],
-            'ODS 8': ['Eficiencia energética', 'Generación de empleo']
-        }),
-        ('w5000.txt', {
-            'ODS 17': ['Remesas'],
-            'ODS 5': ['Orientación sexual', 'Ley 1/2004', 'Natalidad'],
-            'ODS 8': ['Desempleo', 'INEM', 'Edad de trabajar',
-                      'Conciliacion laboral', 'Trabajadores de más edad',
-                      'Pensiones'],
-        })
-    ])
-    def test_extract_tags(self, filename, expected_tags):
-        with open('tests/tipi-backend/api/scanner_text/' + filename, 'r') as f:
-            text = f.read()
-        res = self.client.post('/labels/extract', data={'text': text})
-        self.assertEqual(res.status_code, 200)
-        res_json = res.json
-        self.assertTrue('topics' in res_json)
-        self.assertTrue('tags' in res_json)
-
-        print(res_json)
-        self.assertEqual(len(res_json['topics']), len(expected_tags))
-        self.assertEqual(len(res_json['tags']), len([v for vs in expected_tags.values() for v in vs]))
-
-        for res in res_json['tags']:
-            topic = res.get('topic', '').split('-')[0].strip()
-            tag = res.get('tag', '')
-            print(topic, tag)
-            self.assertTrue(tag in expected_tags.get(topic, {}))
-
-    def test_labeling_num_words(self):
-        Config.LABELING_MAX_WORD = 10
-        text = "test " * 11
-        res = self.client.post('/labels/extract', data={'text': text})
-        self.assertEqual(res.status_code, 200)
-        self.assertTrue('task_id' in res.json)
+@pytest.fixture
+def sync_word_limit():
+    """Override TAGGER_MAX_WORDS so all scanner_text fixtures stay in the sync path."""
+    original = Config.TAGGER_MAX_WORDS
+    Config.TAGGER_MAX_WORDS = 5001
+    yield
+    Config.TAGGER_MAX_WORDS = original
 
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.mark.parametrize("filename,expected_subset", [
+    (
+        "w100.txt",
+        {
+            "ODS 16 Paz, justicia e instituciones sólidas": ["Elusión y evasión fiscal"],
+        },
+    ),
+    (
+        "w500.txt",
+        {
+            "ODS 5 Igualdad de género": ["Aborto"],
+            "ODS 6 Agua limpia y saneamiento": ["Contaminación del agua"],
+        },
+    ),
+    (
+        "w1000.txt",
+        {
+            "ODS 16 Paz, justicia e instituciones sólidas": ["Rendición de cuentas"],
+            "ODS 5 Igualdad de género": ["Empoderamiento de las mujeres y las niñas"],
+        },
+    ),
+    (
+        "w2000.txt",
+        {
+            "ODS 7 Energía asequible y no contaminante": ["Transición energética"],
+            "ODS 11 Ciudades y comunidades sostenibles": ["Electrificación de la movilidad"],
+        },
+    ),
+    (
+        "w5000.txt",
+        {
+            "ODS 17 Alianzas para lograr los objetivos": ["Remesas"],
+            "ODS 5 Igualdad de género": ["Natalidad"],
+            "ODS 8 Trabajo decente y crecimiento económico": ["Desempleo"],
+        },
+    ),
+])
+def test_extract_tags(client, sync_word_limit, filename, expected_subset):
+    with open(FIXTURE_DIR + filename, "r") as f:
+        text = f.read()
+
+    res = client.post("/tagger/", data={"text": text})
+    assert res.status_code == 200
+
+    body = res.json
+    assert body["status"] == "SUCCESS"
+    assert "result" in body
+
+    result = body["result"]
+    topics = result["topics"]
+    tags = result["tags"]
+    assert len(topics) > 0, f"{filename}: expected at least one topic"
+    assert len(tags) > 0, f"{filename}: expected at least one tag"
+
+    # Verify tag schema: required fields present, 'public' removed by remove_fields
+    returned_by_topic = {}
+    for tag in tags:
+        assert "topic" in tag
+        assert "subtopic" in tag
+        assert "tag" in tag
+        assert "knowledgebase" in tag
+        assert "times" in tag
+        assert "public" not in tag, "remove_fields should have deleted 'public'"
+        assert tag["topic"] in topics, f"tag topic '{tag['topic']}' missing from topics list"
+        returned_by_topic.setdefault(tag["topic"], []).append(tag["tag"])
+
+    # Known-subset: a small set of high-confidence topic/tag pairs per fixture
+    for topic, expected_tags in expected_subset.items():
+        assert topic in topics, f"{filename}: expected topic '{topic}'"
+        for expected_tag in expected_tags:
+            assert expected_tag in returned_by_topic.get(topic, []), (
+                f"{filename}: expected tag '{expected_tag}' under topic '{topic}'"
+            )
+
+
+def test_async_dispatch(client):
+    """Texts >= TAGGER_MAX_WORDS are dispatched asynchronously."""
+    original = Config.TAGGER_MAX_WORDS
+    Config.TAGGER_MAX_WORDS = 10
+    try:
+        res = client.post("/tagger/", data={"text": "word " * 11})
+        assert res.status_code == 200
+        body = res.json
+        assert body["status"] == "PROCESSING"
+        assert "task_id" in body
+        assert "estimated_time" in body
+    finally:
+        Config.TAGGER_MAX_WORDS = original

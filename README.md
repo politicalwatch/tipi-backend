@@ -56,7 +56,7 @@ docker exec -ti qhld-backend sh runtests.sh
 To restrict to a single test:
 
 ```
-docker exec -ti qhld-backend pytest -v -s --cov-report html --cov=tipi_backend tests -k TestLimit
+docker exec -ti qhld-backend pytest -v -s --cov-report html --cov=tipi_backend tests -k test_rate_limit
 ```
 
 **On the host** (requires local MongoDB, Redis, and settings.py):
