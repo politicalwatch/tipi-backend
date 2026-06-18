@@ -1,6 +1,6 @@
 [project]
 name = "qhld-backend"
-version = "1.0.0"
+version = "1.1.0"
 description = "QHLD Backend"
 authors = [{ name = "pr3ssh" }]
 requires-python = ">=3.12"
@@ -17,9 +17,6 @@ dependencies = [
     "pdfminer.six==20260107",
     "python-docx==1.2.0",
     "python-pptx==1.0.2",
-    "python-slugify==8.0.4",
-    "regex==2024.11.6",
-    "six==1.16.0",
     "Werkzeug==3.1.8",
     "qhld-data",
     "qhld-tasks",
