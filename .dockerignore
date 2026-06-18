@@ -1,11 +1,8 @@
+.venv
 __pycache__
 *.pyc
 .coverage
 htmlcov/
-.DS_Store
-
-.venv/
 tipi_backend.egg-info
 tipi_backend/settings.py
-
 local_config.py

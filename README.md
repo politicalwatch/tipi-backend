@@ -1,21 +1,20 @@
-TIPI BACKEND
+QHLD BACKEND
 ============
 
 ## Requirements
 
-* Python 3.8
-* Virtualenv (created and activated)
+* Python 3.12
+* [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 
 ## Setup
 
 ```
-git clone git@github.com:politicalwatch/tipi-backend.git
-cd tipi-backend
-pip install -r requirements_dev.txt
+git clone git@github.com:politicalwatch/qhld-backend.git
+cd qhld-backend
+uv sync
 set -a
 source .env
-python setup.py develop
 ```
 
 Finally, edit *tipi_backend/settings.py* file with your specific values.
@@ -29,7 +28,7 @@ Finally, edit *tipi_backend/settings.py* file with your specific values.
 ## Run
 
 ```
-python tipi_backend/app.py
+uv run python tipi_backend/app.py
 ```
 
 
@@ -38,22 +37,30 @@ python tipi_backend/app.py
 For exec load testing is necessary install locust. You can initialize the tool:
 
 ```
-$ locust Labeling
+uv run locust
 ```
 
 This start local server in port 8089.
 
 
-## Run tests from docker
+## Run tests
 
-With docker-compose executing, you should exec the next command:
+Tests require a running MongoDB, Redis, and a configured `tipi_backend/settings.py`.
 
-```
-docker exec -ti tipi-backend sh runtests.sh
-```
-
-If you only want to execute one test, you can restrict pytest with -k option:
+**Inside the container** (recommended — all dependencies available):
 
 ```
-docker exec -ti tipi-backend pytest -v -s --cov-report html --cov=tipi_backend tests -k TestLimit
+docker exec -ti qhld-backend sh runtests.sh
+```
+
+To restrict to a single test:
+
+```
+docker exec -ti qhld-backend pytest -v -s --cov-report html --cov=tipi_backend tests -k TestLimit
+```
+
+**On the host** (requires local MongoDB, Redis, and settings.py):
+
+```
+uv run pytest -v -s --cov-report html --cov=tipi_backend tests
 ```
