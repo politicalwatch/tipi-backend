@@ -1137,18 +1137,6 @@ wheels = [
 ]
 
 [[package]]
-name = "mongoengine"
-version = "0.29.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pymongo" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/76/160e35d90a671913146b884b1ca586909036dd56070600035821870b1aad/mongoengine-0.29.3.tar.gz", hash = "sha256:4267702aea433012845cb12b6334bff86a0a3084b5d141c1e4553ea20374a9b4", size = 188213, upload-time = "2026-03-10T15:19:17.946Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/b5/214ea32710fa3ad7c13820cbb9f9a457d4809a5d54995e0d081f33c75116/mongoengine-0.29.3-py3-none-any.whl", hash = "sha256:2d5a216cf2368867d43e5321b13044ecc3e72c3f19ace21b1c5e7403951ca685", size = 112513, upload-time = "2026-03-10T15:19:16.619Z" },
-]
-
-[[package]]
 name = "msgpack"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1788,7 +1776,7 @@ wheels = [
 
 [[package]]
 name = "qhld-backend"
-version = "1.2.0"
+version = "2.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -1823,8 +1811,8 @@ requires-dist = [
     { name = "python-docx", specifier = "==1.2.0" },
     { name = "python-multipart", specifier = "==0.0.32" },
     { name = "python-pptx", specifier = "==1.0.2" },
-    { name = "qhld-data", git = "https://github.com/politicalwatch/qhld-data.git?tag=v1.3.0" },
-    { name = "qhld-tasks", git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v1.1.0" },
+    { name = "qhld-data", git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.0" },
+    { name = "qhld-tasks", git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.0" },
     { name = "redis", specifier = "==6.4.0" },
     { name = "slowapi", specifier = "==0.1.10" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.49.0" },
@@ -1841,22 +1829,19 @@ dev = [
 
 [[package]]
 name = "qhld-data"
-version = "1.3.0"
-source = { git = "https://github.com/politicalwatch/qhld-data.git?tag=v1.3.0#bd22fc755fa5d642895d262652cafae0e9cbb88b" }
+version = "2.0.0"
+source = { git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.0#c84925b3cfd38ecb1b4c6367a4a3da013b18d72c" }
 dependencies = [
-    { name = "mongoengine" },
-    { name = "natsort" },
     { name = "pydantic" },
     { name = "pymongo" },
     { name = "python-slugify" },
     { name = "regex" },
-    { name = "six" },
 ]
 
 [[package]]
 name = "qhld-tasks"
-version = "1.1.0"
-source = { git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v1.1.0#ee1ceead2951baf61c4bfae18370438e53832199" }
+version = "2.0.0"
+source = { git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.0#270f2a677a24eb91ad8a3c8e9bc1537994a306c8" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "jinja2" },
