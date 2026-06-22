@@ -58,7 +58,7 @@ def test_extract_tags(client, sync_word_limit, filename, expected_subset):
     res = client.post("/tagger/", data={"text": text})
     assert res.status_code == 200
 
-    body = res.json
+    body = res.json()
     assert body["status"] == "SUCCESS"
     assert "result" in body
 
@@ -96,7 +96,7 @@ def test_async_dispatch(client):
     try:
         res = client.post("/tagger/", data={"text": "word " * 11})
         assert res.status_code == 200
-        body = res.json
+        body = res.json()
         assert body["status"] == "PROCESSING"
         assert "task_id" in body
         assert "estimated_time" in body
