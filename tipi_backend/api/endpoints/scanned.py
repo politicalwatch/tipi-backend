@@ -1,54 +1,41 @@
 import logging
-import json
 
-from flask import request, abort
-from flask_restx import Namespace, Resource, fields
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from tipi_backend.api.business import save_scanned, get_scanned, search_verified_scanned
-from tipi_backend.api.endpoints import limiter
-from tipi_backend.api.serializers import scanned_model
+from tipi_backend.api.ratelimit import limiter
+from tipi_backend.api.request_models import ScannedBody
+from tipi_backend.api.serialization import serialize
 
 
 log = logging.getLogger(__name__)
 
-ns = Namespace('scanned', description='Operations related to scanned documents')
+router = APIRouter(prefix="/scanned", tags=["scanned"])
 
-@ns.route('/')
-@ns.doc(False)
-class ScannedCollection(Resource):
-    decorators = [
-        limiter.limit('10/hour', methods=['POST'])
-    ]
 
-    @ns.expect(scanned_model)
-    @ns.response(201, 'Scanned successfully created.')
-    def post(self):
-        ''' Create a new scanned '''
-        try:
-            return save_scanned(ns.payload), 201
-        except Exception as e:
-            abort(500)
+@router.post("/", status_code=201, include_in_schema=False)
+@limiter.limit("10/hour")
+def create_scanned(request: Request, body: ScannedBody):
+    """Create a new scanned."""
+    try:
+        return save_scanned(body.model_dump())
+    except Exception as e:
+        log.error(e)
+        raise HTTPException(status_code=500)
 
-@ns.route('/<id>')
-@ns.doc(False)
-@ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
-@ns.response(404, 'Scanned not found.')
-class ScannedItem(Resource):
 
-    def get(self, id):
-        """Returns details of a scanned document."""
-        try:
-            return get_scanned(id)
-        except Exception as e:
-            log.error(e)
-            return {'Error': 'No scanned document found'}, 404
+@router.get("/search/{query}", include_in_schema=False)
+def search_scanned(query: str):
+    """Returns list of verified scanned documents."""
+    return serialize(search_verified_scanned(query))
 
-@ns.route('/search/<query>')
-@ns.doc(False)
-@ns.param(name='query', description='Search query', type=str, required=True, location=['path'])
-@ns.response(404, 'Results not found.')
-class SearchScanned(Resource):
 
-    def get(self, query):
-        """Returns list of verified scanned documents"""
-        return search_verified_scanned(query)
+@router.get("/{id}", include_in_schema=False)
+def get_scanned_item(id: str):
+    """Returns details of a scanned document."""
+    try:
+        return serialize(get_scanned(id))
+    except Exception as e:
+        log.error(e)
+        return JSONResponse(status_code=404, content={"Error": "No scanned document found"})

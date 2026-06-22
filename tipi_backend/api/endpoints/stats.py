@@ -1,94 +1,74 @@
 import logging
+from typing import Annotated
 
-from flask import request
-from flask_restx import Namespace, Resource
+from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
 
-from tipi_backend.api.parsers import \
-        parser_stats, \
-        parser_stats_by_topic, \
-        parser_stats_by_group, \
-        parser_kb
-from tipi_backend.api.business import \
-        get_overall_stats, \
-        get_lastdays_stats, \
-        get_deputies_stats, \
-        get_parliamentarygroups_stats, \
-        get_places_stats, \
-        get_topics_by_parliamentarygroup_stats, \
-        get_by_week_stats, \
-        get_topics_by_week_stats
+from tipi_backend.api.business import (
+    get_overall_stats,
+    get_lastdays_stats,
+    get_deputies_stats,
+    get_parliamentarygroups_stats,
+    get_places_stats,
+    get_topics_by_parliamentarygroup_stats,
+    get_by_week_stats,
+    get_topics_by_week_stats,
+)
+from tipi_backend.api.request_models import KbQuery, StatsQuery, StatsByTopicQuery, StatsByGroupQuery
 
 
 log = logging.getLogger(__name__)
 
-ns = Namespace('stats', description='Operations related to stats')
+router = APIRouter(prefix="/stats", tags=["stats"])
 
 
-@ns.route('/overall')
-@ns.expect(parser_kb)
-class OverallStats(Resource):
+@router.get("/overall")
+def overall_stats(query: Annotated[KbQuery, Query()]):
+    """Returns overall stats."""
+    return get_overall_stats(query.model_dump())
 
-    def get(self):
-        """Returns overall stats."""
-        args = parser_kb.parse_args(request)
-        return get_overall_stats(args)
 
-@ns.route('/lastdays')
-class LastdaysStats(Resource):
+@router.get("/lastdays")
+def lastdays_stats(query: Annotated[KbQuery, Query()]):
+    """Returns last days stats."""
+    return get_lastdays_stats(query.model_dump())
 
-    def get(self):
-        """Returns last days stats."""
-        args = parser_kb.parse_args(request)
-        return get_lastdays_stats(args)
 
-@ns.route('/deputies')
-@ns.expect(parser_stats)
-class DeputiesStats(Resource):
+@router.get("/deputies")
+def deputies_stats(query: Annotated[StatsQuery, Query()]):
+    """Returns top ten deputies by topics (and/or subtopics)."""
+    return get_deputies_stats(query.model_dump())
 
-    def get(self):
-        """Returns top ten deputies by topics (and/or subtopics)."""
-        args = parser_stats.parse_args(request)
-        return get_deputies_stats(args)
 
-@ns.route('/parliamentarygroups')
-@ns.expect(parser_stats)
-class ParliamentaryGroupsStats(Resource):
+@router.get("/parliamentarygroups")
+def parliamentarygroups_stats(query: Annotated[StatsQuery, Query()]):
+    """Returns ranking of parliamentary groups by topics (and/or subtopics)."""
+    return get_parliamentarygroups_stats(query.model_dump())
 
-    def get(self):
-        """Returns ranking of parliamentary groups by topics (and/or subtopics)."""
-        args = parser_stats.parse_args(request)
-        return get_parliamentarygroups_stats(args)
 
-@ns.route('/places')
-@ns.expect(parser_stats)
-class PlacesStats(Resource):
+@router.get("/places")
+def places_stats(query: Annotated[StatsQuery, Query()]):
+    """Returns top five places by topics (and/or subtopics)."""
+    return get_places_stats(query.model_dump())
 
-    def get(self):
-        """Returns top five places by topics (and/or subtopics)."""
-        args = parser_stats.parse_args(request)
-        return get_places_stats(args)
 
-@ns.route('/topics-by-parliamentarygroup')
-@ns.expect(parser_stats_by_group)
-class TopicsByParliamentaryGroupStats(Resource):
+@router.get("/topics-by-parliamentarygroup")
+def topics_by_parliamentarygroup_stats(query: Annotated[StatsByGroupQuery, Query()]):
+    """Returns ranking of topics by parliamentary group."""
+    result = get_topics_by_parliamentarygroup_stats(query.model_dump())
+    if isinstance(result, tuple):
+        body, status = result
+        return JSONResponse(status_code=status, content=body)
+    return result
 
-    def get(self):
-        """Returns ranking of topics by parliamentary group."""
-        args = parser_stats_by_group.parse_args(request)
-        return get_topics_by_parliamentarygroup_stats(args)
 
-@ns.route('/by-week')
-class ByWeekStats(Resource):
+@router.get("/by-week")
+def by_week_stats():
+    """Returns initiatives by week stats."""
+    return get_by_week_stats()
 
-    def get(self):
-        """Returns initiatives by week stats."""
-        return get_by_week_stats()
 
-@ns.route('/topics-by-week')
-@ns.expect(parser_stats_by_topic)
-class TopicsByWeekStats(Resource):
-
-    def get(self):
-        """Returns topics' initiatives by week stats."""
-        args = parser_stats_by_topic.parse_args(request)
-        return get_topics_by_week_stats(args)
+@router.get("/topics-by-week")
+def topics_by_week_stats(query: Annotated[StatsByTopicQuery, Query()]):
+    """Returns topics' initiatives by week stats."""
+    return get_topics_by_week_stats(query.model_dump())

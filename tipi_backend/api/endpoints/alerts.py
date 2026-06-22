@@ -1,32 +1,26 @@
 import logging
-import json
 
-from flask import request, abort
-from flask_restx import Namespace, Resource, fields
+from fastapi import APIRouter, HTTPException, Request
 
 from tipi_backend.api.business import save_alert
-from tipi_backend.api.endpoints import limiter
-from tipi_backend.api.serializers import alert_model
+from tipi_backend.api.ratelimit import limiter
+from tipi_backend.api.request_models import AlertBody
 
 
 log = logging.getLogger(__name__)
 
-ns = Namespace('alerts', description='Operations related to alerts')
+router = APIRouter(prefix="/alerts", tags=["alerts"])
 
-@ns.route('')
-@ns.doc(False)
-@ns.expect(alert_model)
-class AlertCollection(Resource):
-    decorators = [
-        limiter.limit('10/hour', methods=['POST'])
-    ]
 
-    @ns.response(201, 'Alert successfully created.')
-    def post(self):
-        ''' Create a new alert '''
-        try:
-            save_alert(ns.payload)
-            return 201
-        except Exception as e:
-            abort(500)
-
+@router.post("", include_in_schema=False)
+@limiter.limit("10/hour")
+def create_alert(request: Request, body: AlertBody):
+    """Create a new alert."""
+    try:
+        save_alert(body.model_dump())
+        # NOTE: preserves the legacy response exactly (HTTP 200 with body `201`);
+        # the original flask-restx handler did `return 201`.
+        return 201
+    except Exception as e:
+        log.error(e)
+        raise HTTPException(status_code=500)

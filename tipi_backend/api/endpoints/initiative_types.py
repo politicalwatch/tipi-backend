@@ -1,20 +1,17 @@
 import logging
 
-from flask import request
-from flask_restx import Namespace, Resource
+from fastapi import APIRouter
 
 from tipi_backend.api.business import get_initiative_types
+from tipi_backend.api.serialization import serialize
 
 
 log = logging.getLogger(__name__)
 
-ns = Namespace('initiative-types', description='Operations related to initiative types')
+router = APIRouter(prefix="/initiative-types", tags=["initiative-types"])
 
 
-
-@ns.route('/')
-class InitiativeTypes(Resource):
-
-    def get(self):
-        """Returns list of initiative types."""
-        return get_initiative_types()
+@router.get("/")
+def list_initiative_types():
+    """Returns list of initiative types."""
+    return serialize(get_initiative_types())

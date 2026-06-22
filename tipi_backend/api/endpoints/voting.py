@@ -1,27 +1,27 @@
 import logging
 
-from flask_restx import Namespace, Resource
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from tipi_backend.api.business import get_voting
+from tipi_backend.api.serialization import serialize
 
 
 log = logging.getLogger(__name__)
 
-ns = Namespace('voting', description='Operations related to votes')
+router = APIRouter(prefix="/voting", tags=["voting"])
 
 
-@ns.route('/<initiative_id>')
-@ns.param(name='initiative_id', description='Initiative ID', type=str, required=True, location=['path'], help='Invalid initiative ID')
-@ns.response(404, 'Voting not found.')
-class VotingItem(Resource):
+@router.get("/{initiative_id}")
+def get_voting_item(initiative_id: str):
+    """Returns details of a voting."""
 
-    def get(self, initiative_id):
-        """Returns details of a voting."""
-        def to_reference(id):
-            return id.replace('-', '/')
-        try:
-            log.info(to_reference(initiative_id))
-            return get_voting(to_reference(initiative_id))
-        except Exception as e:
-            log.error(e)
-            return {'Error': 'No votings found'}, 404
+    def to_reference(id):
+        return id.replace("-", "/")
+
+    try:
+        log.info(to_reference(initiative_id))
+        return serialize(get_voting(to_reference(initiative_id)))
+    except Exception as e:
+        log.error(e)
+        return JSONResponse(status_code=404, content={"Error": "No votings found"})

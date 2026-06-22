@@ -1,42 +1,32 @@
 import logging
+from typing import Annotated
 
-from flask import request
-from flask_restx import Namespace, Resource
+from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
 
 from tipi_backend.api.business import get_topics, get_topic
-from tipi_backend.api.endpoints import cache
-from tipi_backend.api.parsers import parser_kb
+from tipi_backend.api.request_models import KbQuery
+from tipi_backend.api.serialization import serialize
 
 
 log = logging.getLogger(__name__)
 
-ns = Namespace('topics', description='Operations related to topics')
+router = APIRouter(prefix="/topics", tags=["topics"])
 
 
-@ns.route('/')
-@ns.expect(parser_kb)
-class TopicsCollection(Resource):
-
-    def get(self):
-        """Returns list of topics."""
-        args = parser_kb.parse_args(request)
-
-        if 'knowledgebase' in args and args['knowledgebase'] is not None:
-            kb = args['knowledgebase']
-            return get_topics(kb.split(','))
-
-        return get_topics()
+@router.get("/")
+def list_topics(query: Annotated[KbQuery, Query()]):
+    """Returns list of topics."""
+    if query.knowledgebase is not None:
+        return serialize(get_topics(query.knowledgebase.split(",")))
+    return serialize(get_topics())
 
 
-@ns.route('/<id>')
-@ns.param(name='id', description='Identifier', type=str, required=True, location=['path'], help='Invalid identifier')
-@ns.response(404, 'Topic not found.')
-class TopicItem(Resource):
-
-    def get(self, id):
-        """Returns details of a topic."""
-        try:
-            return get_topic(id)
-        except Exception as e:
-            log.error(e)
-            return {'Error': 'No topic found'}, 404
+@router.get("/{id}")
+def get_topic_item(id: str):
+    """Returns details of a topic."""
+    try:
+        return serialize(get_topic(id))
+    except Exception as e:
+        log.error(e)
+        return JSONResponse(status_code=404, content={"Error": "No topic found"})
