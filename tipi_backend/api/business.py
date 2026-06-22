@@ -1,7 +1,6 @@
 from datetime import datetime
 import json
 import time
-import re
 from importlib import import_module as im
 
 from natsort import natsorted, ns
@@ -9,19 +8,20 @@ from natsort import natsorted, ns
 import tipi_tasks
 
 from tipi_data.models.alert import Alert, Search
-from tipi_data.models.deputy import Deputy
-from tipi_data.models.initiative_type import InitiativeType
-from tipi_data.models.parliamentarygroup import ParliamentaryGroup
-from tipi_data.models.place import Place
-from tipi_data.models.scanned import Scanned
-from tipi_data.models.stats import Stats
+from tipi_data.models.scanned import Scanned as ScannedModel
+from tipi_data.repositories.alerts import Alerts
+from tipi_data.repositories.deputies import Deputies
 from tipi_data.repositories.initiatives import Initiatives
+from tipi_data.repositories.initiativetypes import InitiativeTypes
 from tipi_data.repositories.knowledgebases import KnowledgeBases
+from tipi_data.repositories.parliamentarygroups import ParliamentaryGroups
+from tipi_data.repositories.places import Places
+from tipi_data.repositories.scanned import Scanned
+from tipi_data.repositories.stats import Stats
 from tipi_data.repositories.tags import Tags
 from tipi_data.repositories.topics import Topics
 from tipi_data.repositories.footprints import Footprints
 from tipi_data.repositories.votings import Votings
-from tipi_data.repositories.deputies import Deputies
 from tipi_data.schemas.deputy import (
     DeputySchema,
     DeputyExtendedSchema,
@@ -71,12 +71,12 @@ def get_deputies(params):
     del params["compact"]
 
     if is_compact:
-        return [DeputyCompactSchema.model_validate(d) for d in Deputy.objects(__raw__=params)]
-    return [DeputySchema.from_doc(d) for d in Deputy.objects(__raw__=params)]
+        return [DeputyCompactSchema.model_validate(d) for d in Deputies.get_by_query(params)]
+    return [DeputySchema.from_doc(d) for d in Deputies.get_by_query(params)]
 
 
 def get_deputy(id):
-    return DeputyExtendedSchema.from_doc(Deputy.objects.get(id=id))
+    return DeputyExtendedSchema.from_doc(Deputies.get(id))
 
 
 def get_deputies_birthdays():
@@ -95,16 +95,16 @@ def get_parliamentarygroups(params):
     if is_compact:
         return [
             ParliamentaryGroupCompactSchema.model_validate(g)
-            for g in ParliamentaryGroup.objects(__raw__=params)
+            for g in ParliamentaryGroups.get_by_query(params)
         ]
     return [
         ParliamentaryGroupSchema.from_doc(g)
-        for g in ParliamentaryGroup.objects(__raw__=params)
+        for g in ParliamentaryGroups.get_by_query(params)
     ]
 
 
 def get_parliamentarygroup(id):
-    return ParliamentaryGroupSchema.from_doc(ParliamentaryGroup.objects.get(id=id))
+    return ParliamentaryGroupSchema.from_doc(ParliamentaryGroups.get(id))
 
 
 """ INITIATIVES METHODS """
@@ -112,7 +112,7 @@ def get_parliamentarygroup(id):
 
 def search_initiatives(params):
     parser = SearchInitiativeParser(params)
-    total = Initiatives.by_query(parser.params).count()
+    total = Initiatives.count_by_query(parser.params)
     pages = int(total // parser.per_page) if parser.per_page > 0 else 1
     if total % parser.per_page > 0:
         pages += 1
@@ -128,7 +128,7 @@ def search_initiatives(params):
         parser.per_page,
         [
             serializer.from_doc(i, kb)
-            for i in Initiatives.by_query(parser.params).limit(limit).skip(skip)
+            for i in Initiatives.by_query_paginated(parser.params, limit, skip)
         ],
     )
 
@@ -145,11 +145,11 @@ def get_initiatives_sitemap():
 
 
 def get_places():
-    return [PlaceSchema.model_validate(p) for p in Place.objects()]
+    return [PlaceSchema.model_validate(p) for p in Places.get_all()]
 
 
 def get_initiative_types():
-    return [InitiativeTypeSchema.model_validate(it) for it in InitiativeType.objects()]
+    return [InitiativeTypeSchema.model_validate(it) for it in InitiativeTypes.get_all()]
 
 
 def get_initiative_status():
@@ -172,7 +172,7 @@ def get_overall_stats(params):
     all_kbs = KnowledgeBases.get_all()
     kbs_to_remove = list(set(all_kbs) - set(kbs))
 
-    output = json.loads(Stats.objects()[0].to_json())["overall"]
+    output = Stats.get().model_dump(by_alias=True)["overall"]
 
     for kb in kbs_to_remove:
         del output["topics"][kb]
@@ -183,7 +183,7 @@ def get_overall_stats(params):
 
 
 def get_lastdays_stats(params):
-    output = json.loads(Stats.objects()[0].to_json())["lastdays"]
+    output = Stats.get().model_dump(by_alias=True)["lastdays"]
 
     return output
 
@@ -198,7 +198,7 @@ def _get_subdoc_stats(stats, key, value, returnkey, kbs):
 
 
 def get_deputies_stats(params):
-    stats = json.loads(Stats.objects()[0].to_json())
+    stats = Stats.get().model_dump(by_alias=True)
     kb = get_kbs(params)
     if params["subtopic"] is not None:
         return _get_subdoc_stats(
@@ -208,7 +208,7 @@ def get_deputies_stats(params):
 
 
 def get_parliamentarygroups_stats(params):
-    stats = json.loads(Stats.objects()[0].to_json())
+    stats = Stats.get().model_dump(by_alias=True)
     kb = get_kbs(params)
     if params["subtopic"] is not None:
         return _get_subdoc_stats(
@@ -224,7 +224,7 @@ def get_parliamentarygroups_stats(params):
 
 
 def get_places_stats(params):
-    stats = json.loads(Stats.objects()[0].to_json())
+    stats = Stats.get().model_dump(by_alias=True)
     kb = get_kbs(params)
     if params["subtopic"] is not None:
         return _get_subdoc_stats(
@@ -235,10 +235,10 @@ def get_places_stats(params):
 
 def get_topics_by_parliamentarygroup_stats(params):
     try:
-        ParliamentaryGroup.objects().get(name=params["parliamentarygroup"])
+        ParliamentaryGroups.get_by_name(params["parliamentarygroup"])
     except Exception:
         return [], 404
-    stats = json.loads(Stats.objects[0].to_json())
+    stats = Stats.get().model_dump(by_alias=True)
     kbs = get_kbs(params)
     topics = []
     for kb in stats["parliamentarygroupsByTopics"]:
@@ -263,13 +263,13 @@ def get_topics_by_parliamentarygroup_stats(params):
 
 
 def get_by_week_stats():
-    stats = json.loads(Stats.objects()[0].to_json())
+    stats = Stats.get().model_dump(by_alias=True)
     return stats["byWeek"]
 
 
 def get_topics_by_week_stats(params):
     result = []
-    stats = json.loads(Stats.objects()[0].to_json())
+    stats = Stats.get().model_dump(by_alias=True)
     for kb in KnowledgeBases.get_public():
         if kb != params["knowledgebase"]:
             continue
@@ -322,7 +322,7 @@ def get_tags():
 
 
 def save_alert(payload):
-    alert = Alert.objects(email=payload["email"]).first()
+    alert = Alerts.get_by_email(payload["email"])
     if not alert:
         alert = Alert(id=generate_id(payload["email"]), email=payload["email"])
         _add_search_to_alert(payload["search"], alert)
@@ -337,7 +337,7 @@ def save_alert(payload):
             return
         _add_search_to_alert(payload["search"], alert)
 
-    result = alert.save()
+    result = Alerts.save(alert)
     if not result:
         raise Exception
 
@@ -366,7 +366,7 @@ def _add_search_to_alert(search, alert):
 
 
 def get_scanned(id):
-    return ScannedSchema.model_validate(Scanned.objects.get(id=id))
+    return ScannedSchema.model_validate(Scanned.get(id))
 
 
 def save_scanned(payload):
@@ -377,7 +377,7 @@ def save_scanned(payload):
         ONE_MONTH_IN_SECONDS * EXPIRATION_OPTIONS.get(payload.get("expiration", "1m"))
     )
 
-    scanned = Scanned(
+    scanned = ScannedModel(
         id=generate_id(payload["title"], payload["excerpt"], str(datetime.now())),
         title=payload["title"],
         excerpt=payload["excerpt"],
@@ -398,7 +398,7 @@ def save_scanned(payload):
             tag["times"],
         )
 
-    saved = scanned.save()
+    saved = Scanned.save(scanned)
     if not saved:
         raise Exception
     return {
@@ -410,8 +410,6 @@ def save_scanned(payload):
 
 
 def search_verified_scanned(query):
-    documents = Scanned.objects.filter(
-        title=re.compile(query, re.IGNORECASE), verified=True
-    )
+    documents = Scanned.search_verified(query)
 
     return [ScannedSchema.model_validate(d) for d in documents]

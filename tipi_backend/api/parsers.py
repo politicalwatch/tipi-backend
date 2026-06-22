@@ -9,8 +9,8 @@ the previous flask-restx implementation.
 import datetime
 from importlib import import_module as im
 
-from tipi_data.models.parliamentarygroup import ParliamentaryGroup
-from tipi_data.models.initiative_type import InitiativeType
+from tipi_data.repositories.parliamentarygroups import ParliamentaryGroups
+from tipi_data.repositories.initiativetypes import InitiativeTypes
 from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.schemas.initiative import (
     InitiativeExtendedSchema,
@@ -134,14 +134,14 @@ class SearchInitiativeParser:
                 for item in value:
                     clean = item.replace("'", "")
                     try:
-                        codes.append(InitiativeType.objects.get(name=clean)['id'])
+                        codes.append(InitiativeTypes.get_by_name(clean).id)
                     except Exception:
                         pass
                 return {'initiative_type': {'$in': codes}}
             else:
                 value = value[0].replace("'", "")
             try:
-                code = InitiativeType.objects.get(name=value)['id']
+                code = InitiativeTypes.get_by_name(value).id
             except Exception:
                 code = ''
             itm = im('tipi_backend.api.managers.{}.initiative_type'.format(Config.COUNTRY))
@@ -167,7 +167,7 @@ class SearchInitiativeParser:
     class AuthorFieldParser():
         @staticmethod
         def get_search_for(key, value):
-            if not ParliamentaryGroup.objects(name=value):
+            if not ParliamentaryGroups.get_by_query({"name": value}):
                 return {'author_others': value}
             return {'author_parliamentarygroups': value}
 

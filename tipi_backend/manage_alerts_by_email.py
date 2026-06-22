@@ -4,7 +4,7 @@ import os
 
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
-from tipi_data.models.alert import Alert
+from tipi_data.repositories.alerts import Alerts
 
 
 log = logging.getLogger(__name__)
@@ -37,13 +37,8 @@ def get_project_name(alert):
 @router.get("/validate/{hashed_email}/{hashed_search}")
 def validate_email_alert(request: Request, hashed_email: str, hashed_search: str):
     try:
-        Alert.objects(
-            id=hashed_email, searches__hash=hashed_search
-        ).update_one(set__searches__S__validated=True, full_result=True)
-
-        alert = Alert.objects(
-            id=hashed_email, searches__hash=hashed_search
-        ).first()
+        Alerts.validate_search(hashed_email, hashed_search)
+        alert = Alerts.get_by_id_and_search(hashed_email, hashed_search)
 
         if not alert:
             return render(request, "validate/validate_email_timeout.html")
@@ -55,17 +50,9 @@ def validate_email_alert(request: Request, hashed_email: str, hashed_search: str
 
 @router.get("/unsubscribe/{hashed_email}/{hashed_search}")
 def unsubscribe_email_alert(request: Request, hashed_email: str, hashed_search: str):
-    try:
-        alert = Alert.objects(
-            id=hashed_email, searches__hash=hashed_search
-        ).first()
-        Alert.objects(
-            id=hashed_email, searches__hash=hashed_search
-        ).update(pull__searches__hash=hashed_search, full_result=True)
-        return render(request, "unsubscribe/unsubscribe_email_success.html", get_project_name(alert))
-    except Alert.DoesNotExist:
+    alert = Alerts.get_by_id_and_search(hashed_email, hashed_search)
+    if not alert:
         log.error("Alert to unsubscribe does not exist")
         return render(request, "unsubscribe/unsubscribe_email_error.html")
-    except Alert.MultipleObjectsReturned:
-        log.error("Multiple object returned when unsubscribing the alert")
-        return render(request, "unsubscribe/unsubscribe_email_error.html")
+    Alerts.remove_search(hashed_search)
+    return render(request, "unsubscribe/unsubscribe_email_success.html", get_project_name(alert))
