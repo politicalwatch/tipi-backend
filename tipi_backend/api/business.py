@@ -1,7 +1,5 @@
 from datetime import datetime
-from os import environ as env
 import json
-import ast
 import time
 import re
 from importlib import import_module as im
@@ -12,27 +10,23 @@ import tipi_tasks
 
 from tipi_data.models.alert import Alert, Search
 from tipi_data.models.deputy import Deputy
-from tipi_data.models.initiative import Initiative
 from tipi_data.models.initiative_type import InitiativeType
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
 from tipi_data.models.place import Place
-from tipi_data.models.voting import Voting
 from tipi_data.models.scanned import Scanned
 from tipi_data.models.stats import Stats
-from tipi_data.models.topic import Topic
 from tipi_data.repositories.initiatives import Initiatives
 from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.repositories.tags import Tags
 from tipi_data.repositories.topics import Topics
 from tipi_data.repositories.footprints import Footprints
 from tipi_data.repositories.votings import Votings
+from tipi_data.repositories.deputies import Deputies
 from tipi_data.schemas.deputy import (
     DeputySchema,
     DeputyExtendedSchema,
     DeputyCompactSchema,
 )
-from tipi_data.repositories.deputies import Deputies
-from tipi_data.schemas.initiative import InitiativeSchema, InitiativeExtendedSchema
 from tipi_data.schemas.initiative_type import InitiativeTypeSchema
 from tipi_data.schemas.parliamentarygroup import (
     ParliamentaryGroupSchema,
@@ -58,13 +52,13 @@ from tipi_backend.api.parsers import SearchInitiativeParser, InitiativeParser
 
 def get_topics(kb=False):
     if kb:
-        return TopicSchema(many=True).dump(Topics.by_kb_sorted(kb))
+        return [TopicSchema.model_validate(t) for t in Topics.by_kb_sorted(kb)]
 
-    return TopicSchema(many=True).dump(Topics.get_public())
+    return [TopicSchema.model_validate(t) for t in Topics.get_public()]
 
 
 def get_topic(id):
-    return TopicExtendedSchema().dump(Topics.get(id))
+    return TopicExtendedSchema.model_validate(Topics.get(id))
 
 
 """ DEPUTIES METHODS """
@@ -77,16 +71,16 @@ def get_deputies(params):
     del params["compact"]
 
     if is_compact:
-        return DeputyCompactSchema(many=True).dump(Deputy.objects(__raw__=params))
-    return DeputySchema(many=True).dump(Deputy.objects(__raw__=params))
+        return [DeputyCompactSchema.model_validate(d) for d in Deputy.objects(__raw__=params)]
+    return [DeputySchema.from_doc(d) for d in Deputy.objects(__raw__=params)]
 
 
 def get_deputy(id):
-    return DeputyExtendedSchema().dump(Deputy.objects.get(id=id))
+    return DeputyExtendedSchema.from_doc(Deputy.objects.get(id=id))
 
 
 def get_deputies_birthdays():
-    return DeputySchema(many=True).dump(Deputies.get_birthdays())
+    return [DeputySchema.from_doc(d) for d in Deputies.get_birthdays()]
 
 
 """ PARLIAMENTARY GROUPS METHODS """
@@ -99,16 +93,18 @@ def get_parliamentarygroups(params):
     del params["compact"]
 
     if is_compact:
-        return ParliamentaryGroupCompactSchema(many=True).dump(
-            ParliamentaryGroup.objects(__raw__=params)
-        )
-    return ParliamentaryGroupSchema(many=True).dump(
-        ParliamentaryGroup.objects(__raw__=params)
-    )
+        return [
+            ParliamentaryGroupCompactSchema.model_validate(g)
+            for g in ParliamentaryGroup.objects(__raw__=params)
+        ]
+    return [
+        ParliamentaryGroupSchema.from_doc(g)
+        for g in ParliamentaryGroup.objects(__raw__=params)
+    ]
 
 
 def get_parliamentarygroup(id):
-    return ParliamentaryGroupSchema().dump(ParliamentaryGroup.objects.get(id=id))
+    return ParliamentaryGroupSchema.from_doc(ParliamentaryGroup.objects.get(id=id))
 
 
 """ INITIATIVES METHODS """
@@ -130,9 +126,10 @@ def search_initiatives(params):
         pages,
         parser.page,
         parser.per_page,
-        serializer(kb=kb, many=True).dump(
-            Initiatives.by_query(parser.params).limit(limit).skip(skip)
-        ),
+        [
+            serializer.from_doc(i, kb)
+            for i in Initiatives.by_query(parser.params).limit(limit).skip(skip)
+        ],
     )
 
 
@@ -140,16 +137,19 @@ def get_initiative(id, params):
     parser = InitiativeParser(params)
     serializer = parser.serializer
     kb = parser.kb
-    return serializer(kb=kb).dump(Initiatives.get(id=id))
+    return serializer.from_doc(Initiatives.get(id=id), kb)
+
+
+def get_initiatives_sitemap():
+    return [{"id": i.id, "updated": i.updated} for i in Initiatives.sitemap()]
 
 
 def get_places():
-    return PlaceSchema(many=True).dump(Place.objects())
+    return [PlaceSchema.model_validate(p) for p in Place.objects()]
 
 
 def get_initiative_types():
-    initiative_types = InitiativeType.objects()
-    return InitiativeTypeSchema(many=True).dump(initiative_types)
+    return [InitiativeTypeSchema.model_validate(it) for it in InitiativeType.objects()]
 
 
 def get_initiative_status():
@@ -161,7 +161,7 @@ def get_initiative_status():
 
 
 def get_voting(reference):
-    return VotingSchema(many=True).dump(Votings.get_by(reference))
+    return [VotingSchema.model_validate(v) for v in Votings.get_by(reference)]
 
 
 """ STATS METHODS """
@@ -294,7 +294,7 @@ def get_kbs(args):
 
 
 def get_footprint_by_topic(params):
-    return FootprintByTopicSchema().dump(Footprints.get_by_topic(params["topic"]))
+    return FootprintByTopicSchema.model_validate(Footprints.get_by_topic(params["topic"]))
 
 
 def get_footprint_range_by_all_topics():
@@ -302,11 +302,11 @@ def get_footprint_range_by_all_topics():
 
 
 def get_footprint_by_deputy(params):
-    return FootprintByDeputySchema().dump(Footprints.get_by_deputy(params["deputy"]))
+    return FootprintByDeputySchema.model_validate(Footprints.get_by_deputy(params["deputy"]))
 
 
 def get_footprint_by_parliamentarygroup(params):
-    return FootprintByParliamentaryGroupSchema().dump(
+    return FootprintByParliamentaryGroupSchema.model_validate(
         Footprints.get_by_parliamentarygroup(params["parliamentarygroup"])
     )
 
@@ -366,7 +366,7 @@ def _add_search_to_alert(search, alert):
 
 
 def get_scanned(id):
-    return ScannedSchema().dump(Scanned.objects.get(id=id))
+    return ScannedSchema.model_validate(Scanned.objects.get(id=id))
 
 
 def save_scanned(payload):
@@ -414,4 +414,4 @@ def search_verified_scanned(query):
         title=re.compile(query, re.IGNORECASE), verified=True
     )
 
-    return ScannedSchema(many=True).dump(documents)
+    return [ScannedSchema.model_validate(d) for d in documents]
