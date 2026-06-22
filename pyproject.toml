@@ -31,8 +31,8 @@ dev = [
 ]
 
 [tool.uv.sources]
-qhld-data  = { git = "https://github.com/politicalwatch/qhld-data.git" }
-qhld-tasks = { git = "https://github.com/politicalwatch/qhld-tasks.git" }
+qhld-data  = { git = "https://github.com/politicalwatch/qhld-data.git", tag = "v1.3.0" }
+qhld-tasks = { git = "https://github.com/politicalwatch/qhld-tasks.git", tag = "v1.1.0" }
 
 [build-system]
 requires = ["hatchling"]
