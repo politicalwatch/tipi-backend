@@ -21,6 +21,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
 ENV PATH="/app/.venv/bin:$PATH"
-ENV FLASK_APP=tipi_backend/app.py
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--access-logfile", "-", "tipi_backend.wsgi:app", "--timeout", "120"]
+# Run via uvicorn --proxy-headers/--forwarded-allow-ips replace Flask's ProxyFix.
+# Add `--workers N` here for multi-core in one container.
+CMD ["uvicorn", "tipi_backend.wsgi:app", "--host", "0.0.0.0", "--port", "5000", "--proxy-headers", "--forwarded-allow-ips", "*"]

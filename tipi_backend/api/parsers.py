@@ -1,77 +1,25 @@
+"""MongoDB query-building for initiative search.
+
+These classes are NOT request validation (that now lives in ``request_models.py`` as
+Pydantic models). They transform a params dict — produced by ``query.model_dump()`` —
+into a MongoDB query, and select the response schema. Behavior preserved verbatim from
+the previous flask-restx implementation.
+"""
+
 import datetime
 from importlib import import_module as im
 
-from werkzeug.datastructures import FileStorage
-from flask_restx import reqparse
 from tipi_data.models.parliamentarygroup import ParliamentaryGroup
 from tipi_data.models.initiative_type import InitiativeType
 from tipi_data.repositories.knowledgebases import KnowledgeBases
-from tipi_data.schemas.initiative import InitiativeExtendedSchema, InitiativeNoContentSchema, InitiativeSchema
+from tipi_data.schemas.initiative import (
+    InitiativeExtendedSchema,
+    InitiativeNoContentSchema,
+    InitiativeSchema,
+)
 
 from tipi_backend.api.validators import validate_date
 from tipi_backend.settings import Config
-
-
-parser_initiatives = reqparse.RequestParser()
-# Common parameters
-parser_initiatives.add_argument('page', type=int, default=1, location='args', help='Page number')
-parser_initiatives.add_argument('per_page', type=int, default=20, location='args', help='Initiatives per page')
-# Initiative parameters
-parser_initiatives.add_argument('text', type=str, location='args')
-parser_initiatives.add_argument('status', type=str, location='args', help='To get the values, check out /initiative-status')
-parser_initiatives.add_argument('type', type=str, action='append', location='args', help='To get the values, check out /initiative-type')
-parser_initiatives.add_argument('reference', type=str, location='args')
-parser_initiatives.add_argument('place', type=str, location='args')
-parser_initiatives.add_argument('enddate', type=str, location='args', help='Date format must be yyyy-mm-dd')
-parser_initiatives.add_argument('startdate', type=str, location='args', help='Date format must be yyyy-mm-dd')
-parser_initiatives.add_argument('deputy', type=str, location='args', help='To get the values, check out /deputies')
-parser_initiatives.add_argument('author', type=str, location='args', help='To get the values, check out /parliamentary-groups')
-parser_initiatives.add_argument('tags', type=str, action='append', location='args', help='To get the values, check out /topics/id')
-parser_initiatives.add_argument('subtopics', type=str, action='append', location='args', help='To get the values, check out /topics/id')
-parser_initiatives.add_argument('topic', type=str, location='args', help='To get the values, check out /topics')
-parser_initiatives.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full(default), no-content, simple')
-parser_initiatives.add_argument('knowledgebase', type=str, location='args', help='To filter the tagged results of the initiatives.')
-parser_initiatives.add_argument('ignoretagless', type=bool, default=False, location='args', help='Use this boolean to remove the results that are tagged but do not have any positive tag result.')
-
-parser_initiative = reqparse.RequestParser()
-parser_initiative.add_argument('serializer', type=str, location='args', help='To choose the fields of the initiative that will be returned. Options: full, no-content(default), simple')
-parser_initiative.add_argument('knowledgebase', type=str, location='args', help='To filter the tagged results of the initiatives.')
-
-parser_stats = reqparse.RequestParser()
-parser_stats.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
-parser_stats.add_argument('subtopic', type=str, location='args', help='To get the values, check out /topics/id')
-parser_stats.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')
-
-parser_stats_by_topic = reqparse.RequestParser()
-parser_stats_by_topic.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
-parser_stats_by_topic.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')
-
-parser_stats_by_group = reqparse.RequestParser()
-parser_stats_by_group.add_argument('parliamentarygroup', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
-parser_stats_by_group.add_argument('knowledgebase', type=str, location='args', help='To filter the stats by knowledge base.')
-
-
-parser_authors = reqparse.RequestParser()
-parser_authors.add_argument('name', type=str, location='args', help='Send a name')
-parser_authors.add_argument('compact', type=bool, default=False, location='args', help='Compact response without footprints')
-
-parser_tagger = reqparse.RequestParser()
-parser_tagger.add_argument(name='text', type=str, location='form', help='Text to be processed (PREFERENCE)')
-parser_tagger.add_argument(name='file', type=FileStorage, location='files', help='File to be processed')
-parser_tagger.add_argument(name='knowledgebase', type=str, location='form', help='To filter the tagger results by knowledge base.')
-
-
-parser_kb = reqparse.RequestParser()
-parser_kb.add_argument('knowledgebase', type=str, location='args', help='To filter the topics by knowledge base.')
-
-parser_footprint_by_topic = reqparse.RequestParser()
-parser_footprint_by_topic.add_argument('topic', type=str, required=True, location='args', help='To get the values, check out /topics')
-
-parser_footprint_by_deputy = reqparse.RequestParser()
-parser_footprint_by_deputy.add_argument('deputy', type=str, required=True, location='args', help='To get the values, check out /deputies')
-
-parser_footprint_by_parliamentarygroup = reqparse.RequestParser()
-parser_footprint_by_parliamentarygroup.add_argument('parliamentarygroup', type=str, required=True, location='args', help='To get the values, check out /parliamentary-groups')
 
 
 class ParameterBag():
