@@ -72,7 +72,7 @@ def get_deputies(params):
 
     if is_compact:
         return [DeputyCompactSchema.model_validate(d) for d in Deputies.get_by_query(params)]
-    return [DeputySchema.from_doc(d) for d in Deputies.get_by_query(params)]
+    return DeputySchema.from_docs(Deputies.get_by_query(params))
 
 
 def get_deputy(id):
@@ -80,7 +80,7 @@ def get_deputy(id):
 
 
 def get_deputies_birthdays():
-    return [DeputySchema.from_doc(d) for d in Deputies.get_birthdays()]
+    return DeputySchema.from_docs(Deputies.get_birthdays())
 
 
 """ PARLIAMENTARY GROUPS METHODS """
@@ -97,10 +97,7 @@ def get_parliamentarygroups(params):
             ParliamentaryGroupCompactSchema.model_validate(g)
             for g in ParliamentaryGroups.get_by_query(params)
         ]
-    return [
-        ParliamentaryGroupSchema.from_doc(g)
-        for g in ParliamentaryGroups.get_by_query(params)
-    ]
+    return ParliamentaryGroupSchema.from_docs(ParliamentaryGroups.get_by_query(params))
 
 
 def get_parliamentarygroup(id):

@@ -1830,7 +1830,7 @@ dev = [
 [[package]]
 name = "qhld-data"
 version = "2.0.0"
-source = { git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.0#d0511a67ceb5bbc3948d5a25e9d9fa63ac87d6cc" }
+source = { git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.0#0be3c4c0fcf8c06e049a43a742d3605845be4e63" }
 dependencies = [
     { name = "pydantic" },
     { name = "pymongo" },
@@ -1841,7 +1841,7 @@ dependencies = [
 [[package]]
 name = "qhld-tasks"
 version = "2.0.0"
-source = { git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.0#270f2a677a24eb91ad8a3c8e9bc1537994a306c8" }
+source = { git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.0#85fee5a2c215933b2f54aa186da0c887788cb7ca" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "jinja2" },
