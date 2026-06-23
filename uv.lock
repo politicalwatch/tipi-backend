@@ -1830,7 +1830,7 @@ dev = [
 [[package]]
 name = "qhld-data"
 version = "2.0.0"
-source = { git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.0#c84925b3cfd38ecb1b4c6367a4a3da013b18d72c" }
+source = { git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.0#d0511a67ceb5bbc3948d5a25e9d9fa63ac87d6cc" }
 dependencies = [
     { name = "pydantic" },
     { name = "pymongo" },
