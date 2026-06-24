@@ -45,22 +45,50 @@ This start local server in port 8089.
 
 ## Run tests
 
-Tests require a running MongoDB, Redis, and a configured `tipi_backend/settings.py`.
+There are two kinds of tests:
 
-**Inside the container** (recommended — all dependencies available):
+- **unit** (`tests/unit/`) — no infrastructure; run anywhere with no Mongo, Redis,
+  broker, or env setup. They test endpoint behavior against a self-contained KB fixture
+  (`tests/fixtures/knowledgebase.json`).
+- **integration** (`tests/integration/`) — read-only checks against a live prod-copy
+  Mongo.
 
-```
-docker exec -ti qhld-backend sh runtests.sh
-```
-
-To restrict to a single test:
-
-```
-docker exec -ti qhld-backend pytest -v -s --cov-report html --cov=tipi_backend tests -k test_rate_limit
-```
-
-**On the host** (requires local MongoDB, Redis, and settings.py):
+Run everything (the default). Integration tests **auto-skip** when no Mongo is reachable,
+so this stays green with zero setup:
 
 ```
-uv run pytest -v -s --cov-report html --cov=tipi_backend tests
+uv run pytest
+```
+
+Run just one kind:
+
+```
+uv run pytest -m unit
+uv run pytest -m integration
+```
+
+Integration tests only actually run when `MONGO_*` points at a reachable prod-copy DB.
+From the host against the qhld-infra Mongo (replace the port with whatever `qhld-mongo`
+is published on — see `docker ps`):
+
+```
+MONGO_HOST=localhost MONGO_PORT=62884 MONGO_USER=qhld MONGO_PASSWORD=… MONGO_DB_NAME=qhlddb \
+    uv run pytest -m integration
+```
+
+or from inside the qhld-infra `qhld-backend` container (where `MONGO_HOST=mongo`):
+
+```
+docker exec -ti qhld-backend pytest -m integration
+```
+
+Regenerating the unit-test fixture (only when the `politicas`/`ods` KBs change), from a
+mongo with the prod-copy data:
+
+```
+docker exec qhld-mongo mongosh -u qhld -p … --quiet --eval \
+  'db=db.getSiblingDB("qhlddb"); print(JSON.stringify(db.topics.find(
+     {knowledgebase:{$in:["politicas","ods"]}},
+     {_id:0,name:1,knowledgebase:1,public:1,"tags.tag":1,"tags.subtopic":1,"tags.regex":1,"tags.shuffle":1}
+   ).toArray(), null, 2));' > tests/fixtures/knowledgebase.json
 ```
