@@ -4,6 +4,7 @@ import os
 from os import environ as env
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -101,7 +102,7 @@ def create_app(config=Config):
         # flask-restx reqparse returned 400 (not FastAPI's default 422).
         return JSONResponse(
             status_code=400,
-            content={"message": "Input payload validation failed", "errors": exc.errors()},
+            content={"message": "Input payload validation failed", "errors": jsonable_encoder(exc.errors())},
         )
 
     @app.exception_handler(Exception)

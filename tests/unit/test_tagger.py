@@ -94,6 +94,24 @@ def test_kb_filtering(client, sync_word_limit):
     )
 
 
+def test_null_file_field_falls_back_to_text(client, sync_word_limit):
+    """A multipart `file` field carrying the literal string "null" must be ignored.
+
+    Browsers that do ``formData.append('file', null)`` (e.g. escaner2030's scanner
+    when no file is chosen) send the *string* ``"null"``. Before the fix this failed
+    UploadFile validation and the error handler crashed into a bare 500 (which the
+    browser reported as a CORS error). It must now use the text path instead.
+    """
+    text = read_scanner_text("w500.txt")
+
+    res = client.post(
+        "/tagger/",
+        data={"text": text, "file": "null", "knowledgebase": "ods"},
+    )
+    assert res.status_code == 200
+    assert res.json()["status"] == "SUCCESS"
+
+
 def test_async_dispatch(client, monkeypatch):
     """Texts >= TAGGER_MAX_WORDS are dispatched asynchronously (PROCESSING + task_id).
 

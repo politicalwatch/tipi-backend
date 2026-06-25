@@ -93,7 +93,7 @@ def _extract_text_from_file(file: UploadFile) -> str:
 @router.post("/")
 def extract(
     text: Annotated[str, Form()] = "",
-    file: Annotated[UploadFile | None, File()] = None,
+    file: Annotated[UploadFile | str | None, File()] = None,
     knowledgebase: Annotated[str, Form()] = "",
 ):
     """Returns a list of topics and tags matching the text."""
@@ -113,7 +113,7 @@ def extract(
         content = ""
         if text:
             content = text
-        elif file is not None:
+        elif isinstance(file, UploadFile):
             content = _extract_text_from_file(file)
 
         text_length = len(content.split())
