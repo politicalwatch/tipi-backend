@@ -31,8 +31,8 @@ dev = [
 ]
 
 [tool.uv.sources]
-qhld-data  = { git = "https://github.com/politicalwatch/qhld-data.git", tag = "v2.0.0" }
-qhld-tasks = { git = "https://github.com/politicalwatch/qhld-tasks.git", tag = "v2.0.0" }
+qhld-data  = { git = "https://github.com/politicalwatch/qhld-data.git", tag = "v2.0.1" }
+qhld-tasks = { git = "https://github.com/politicalwatch/qhld-tasks.git", tag = "v2.0.1" }
 
 [tool.pytest.ini_options]
 # Listed unit-first so the fast no-infra tests run before the live-DB ones.

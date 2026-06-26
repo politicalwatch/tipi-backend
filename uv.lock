@@ -1811,8 +1811,8 @@ requires-dist = [
     { name = "python-docx", specifier = "==1.2.0" },
     { name = "python-multipart", specifier = "==0.0.32" },
     { name = "python-pptx", specifier = "==1.0.2" },
-    { name = "qhld-data", git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.0" },
-    { name = "qhld-tasks", git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.0" },
+    { name = "qhld-data", git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.1" },
+    { name = "qhld-tasks", git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.1" },
     { name = "redis", specifier = "==6.4.0" },
     { name = "slowapi", specifier = "==0.1.10" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.49.0" },
@@ -1829,8 +1829,8 @@ dev = [
 
 [[package]]
 name = "qhld-data"
-version = "2.0.0"
-source = { git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.0#f29dd6a3183c0dee664110e175445e916fd6534f" }
+version = "2.0.1"
+source = { git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.1#6e729452476f7da24811de65b7002de324c0ca15" }
 dependencies = [
     { name = "pydantic" },
     { name = "pymongo" },
@@ -1840,8 +1840,8 @@ dependencies = [
 
 [[package]]
 name = "qhld-tasks"
-version = "2.0.0"
-source = { git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.0#7d0a05c0465d3fb0cd9303ada6dbf6f142b62df7" }
+version = "2.0.1"
+source = { git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.1#dfa2df10eb198164dd67bca8172284a72b284ef3" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "jinja2" },
