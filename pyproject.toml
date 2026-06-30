@@ -31,8 +31,10 @@ dev = [
 ]
 
 [tool.uv.sources]
-qhld-data  = { git = "https://github.com/politicalwatch/qhld-data.git", tag = "v2.0.1" }
-qhld-tasks = { git = "https://github.com/politicalwatch/qhld-tasks.git", tag = "v2.0.1" }
+# DEV (TFM speeches branch): qhld-data + qhld-tasks pinned to the paired
+# `feat/parliamentary-speech-analysis` branch. Revert both to tag pins before merge.
+qhld-data  = { git = "https://github.com/politicalwatch/qhld-data.git", branch = "feat/parliamentary-speech-analysis" }
+qhld-tasks = { git = "https://github.com/politicalwatch/qhld-tasks.git", branch = "feat/parliamentary-speech-analysis" }
 
 [tool.pytest.ini_options]
 # Listed unit-first so the fast no-infra tests run before the live-DB ones.

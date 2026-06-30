@@ -1811,8 +1811,8 @@ requires-dist = [
     { name = "python-docx", specifier = "==1.2.0" },
     { name = "python-multipart", specifier = "==0.0.32" },
     { name = "python-pptx", specifier = "==1.0.2" },
-    { name = "qhld-data", git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.1" },
-    { name = "qhld-tasks", git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.1" },
+    { name = "qhld-data", git = "https://github.com/politicalwatch/qhld-data.git?branch=feat%2Fparliamentary-speech-analysis" },
+    { name = "qhld-tasks", git = "https://github.com/politicalwatch/qhld-tasks.git?branch=feat%2Fparliamentary-speech-analysis" },
     { name = "redis", specifier = "==6.4.0" },
     { name = "slowapi", specifier = "==0.1.10" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.49.0" },
@@ -1830,7 +1830,7 @@ dev = [
 [[package]]
 name = "qhld-data"
 version = "2.0.1"
-source = { git = "https://github.com/politicalwatch/qhld-data.git?tag=v2.0.1#6e729452476f7da24811de65b7002de324c0ca15" }
+source = { git = "https://github.com/politicalwatch/qhld-data.git?branch=feat%2Fparliamentary-speech-analysis#748ec35e4a2139f15914c32ad28472f92ae01a57" }
 dependencies = [
     { name = "pydantic" },
     { name = "pymongo" },
@@ -1841,7 +1841,7 @@ dependencies = [
 [[package]]
 name = "qhld-tasks"
 version = "2.0.1"
-source = { git = "https://github.com/politicalwatch/qhld-tasks.git?tag=v2.0.1#dfa2df10eb198164dd67bca8172284a72b284ef3" }
+source = { git = "https://github.com/politicalwatch/qhld-tasks.git?branch=feat%2Fparliamentary-speech-analysis#be9b5449000a72ddafbffa5e59b6ffab1eb09f22" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "jinja2" },
