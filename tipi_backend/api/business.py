@@ -17,6 +17,8 @@ from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.repositories.parliamentarygroups import ParliamentaryGroups
 from tipi_data.repositories.places import Places
 from tipi_data.repositories.scanned import Scanned
+from tipi_data.repositories.sessions import Sessions
+from tipi_data.repositories.speeches import Speeches
 from tipi_data.repositories.stats import Stats
 from tipi_data.repositories.tags import Tags
 from tipi_data.repositories.topics import Topics
@@ -40,6 +42,11 @@ from tipi_data.schemas.footprint import (
     FootprintByParliamentaryGroupSchema,
 )
 from tipi_data.schemas.scanned import ScannedSchema
+from tipi_data.schemas.session import SessionSchema
+from tipi_data.schemas.speech import (
+    SpeechCompactSchema,
+    SpeechExtendedSchema,
+)
 from tipi_data.schemas.topic import TopicSchema, TopicExtendedSchema
 from tipi_data.utils import generate_id
 
@@ -139,6 +146,91 @@ def get_initiative(id, params):
 
 def get_initiatives_sitemap():
     return [{"id": i.id, "updated": i.updated} for i in Initiatives.sitemap()]
+
+
+""" SESSIONS & SPEECHES METHODS """
+
+
+def _pagination(total, page, per_page):
+    """Mirror ``search_initiatives`` paging math: page count + Mongo limit/skip
+    (``per_page == -1`` means unpaginated)."""
+    pages = int(total // per_page) if per_page > 0 else 1
+    if per_page > 0 and total % per_page > 0:
+        pages += 1
+    limit = None if per_page == -1 else per_page
+    skip = None if limit is None else (page - 1) * limit
+    return pages, limit, skip
+
+
+def _date_range(params):
+    """A ``date`` range condition (YYYYMMDD int) from ``startdate``/``enddate``;
+    tolerates ISO ``YYYY-MM-DD`` input. Empty when neither bound is given."""
+    rng = {}
+    if params.get("startdate"):
+        rng["$gte"] = int(str(params["startdate"]).replace("-", ""))
+    if params.get("enddate"):
+        rng["$lte"] = int(str(params["enddate"]).replace("-", ""))
+    return rng
+
+
+def _build_sessions_query(params):
+    query = {}
+    for field in ("legislature", "code"):
+        if params.get(field):
+            query[field] = params[field]
+    date = _date_range(params)
+    if date:
+        query["date"] = date
+    return query
+
+
+def _build_speeches_query(params):
+    query = {}
+    if params.get("session"):
+        query["session_id"] = params["session"]
+    if params.get("reference"):
+        query["references"] = params["reference"]  # array-membership match
+    if params.get("mention"):
+        query["mentions.person_id"] = params["mention"]
+    for field in ("speaker", "group", "legislature"):
+        if params.get(field):
+            query[field] = params[field]
+    date = _date_range(params)
+    if date:
+        query["date"] = date
+    return query
+
+
+def search_sessions(params):
+    query = _build_sessions_query(params)
+    total = Sessions.count_by_query(query)
+    pages, limit, skip = _pagination(total, params["page"], params["per_page"])
+    sessions = [
+        SessionSchema.from_doc(s)
+        for s in Sessions.by_query_paginated(query, limit, skip)
+    ]
+    return total, pages, params["page"], params["per_page"], sessions
+
+
+def get_session(id):
+    session = Sessions.get(id)
+    speeches_count = Speeches.count_by_query({"session_id": id})
+    return SessionSchema.from_doc(session, speeches_count=speeches_count)
+
+
+def search_speeches(params):
+    query = _build_speeches_query(params)
+    total = Speeches.count_by_query(query)
+    pages, limit, skip = _pagination(total, params["page"], params["per_page"])
+    speeches = [
+        SpeechCompactSchema.model_validate(s)
+        for s in Speeches.by_query_paginated(query, limit, skip)
+    ]
+    return total, pages, params["page"], params["per_page"], speeches
+
+
+def get_speech(id):
+    return SpeechExtendedSchema.model_validate(Speeches.get(id))
 
 
 def get_places():

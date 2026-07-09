@@ -1830,7 +1830,7 @@ dev = [
 [[package]]
 name = "qhld-data"
 version = "2.0.1"
-source = { git = "https://github.com/politicalwatch/qhld-data.git?branch=feat%2Fparliamentary-speech-analysis#748ec35e4a2139f15914c32ad28472f92ae01a57" }
+source = { git = "https://github.com/politicalwatch/qhld-data.git?branch=feat%2Fparliamentary-speech-analysis#f6279992d080fee16ac4613ca10d863f55bb614a" }
 dependencies = [
     { name = "pydantic" },
     { name = "pymongo" },
@@ -1841,7 +1841,7 @@ dependencies = [
 [[package]]
 name = "qhld-tasks"
 version = "2.0.1"
-source = { git = "https://github.com/politicalwatch/qhld-tasks.git?branch=feat%2Fparliamentary-speech-analysis#be9b5449000a72ddafbffa5e59b6ffab1eb09f22" }
+source = { git = "https://github.com/politicalwatch/qhld-tasks.git?branch=feat%2Fparliamentary-speech-analysis#e6ff49507452550e1528b5563ca93d64c954ad5b" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "jinja2" },

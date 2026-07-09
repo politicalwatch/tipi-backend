@@ -41,3 +41,30 @@ def test_public_topics_present():
 @pytest.mark.parametrize("collection", ["topics", "deputies", "parliamentarygroups", "initiatives"])
 def test_core_collections_nonempty(collection):
     assert db[collection].estimated_document_count() > 0, f"{collection} is empty"
+
+
+def test_sessions_and_speeches_endpoints_live(client):
+    """End-to-end shape check through the routes against prod-copy data: session
+    listing → detail (count + roster) → its speeches (compact) → a speech in full."""
+    if db.sessions.estimated_document_count() == 0:
+        pytest.skip("no sessions in the live DB yet")
+
+    listing = client.get("/sessions/?per_page=3").json()
+    assert listing["query_meta"]["total"] > 0
+    session = listing["sessions"][0]
+    assert session["id"] and "references" in session
+
+    detail = client.get(f"/sessions/{session['id']}").json()
+    assert "speeches_count" in detail
+
+    speeches = client.get(f"/speeches/?session={session['id']}").json()
+    assert speeches["query_meta"]["total"] == detail["speeches_count"]
+    if speeches["speeches"]:
+        first = speeches["speeches"][0]
+        assert "speech" not in first  # compact list
+        full = client.get(f"/speeches/{first['id']}").json()
+        assert "speech" in full  # detail carries the text blocks
+
+
+def test_speech_missing_returns_404(client):
+    assert client.get("/speeches/does-not-exist").status_code == 404

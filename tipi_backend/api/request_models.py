@@ -35,6 +35,28 @@ class InitiativeQuery(BaseModel):
     knowledgebase: str | None = None
 
 
+class SessionsQuery(BaseModel):
+    page: int = 1
+    per_page: int = 20
+    legislature: str | None = None
+    code: str | None = None
+    startdate: str | None = None
+    enddate: str | None = None
+
+
+class SpeechesQuery(BaseModel):
+    page: int = 1
+    per_page: int = 20
+    session: str | None = None
+    reference: str | None = None
+    speaker: str | None = None
+    group: str | None = None
+    legislature: str | None = None
+    startdate: str | None = None
+    enddate: str | None = None
+    mention: str | None = None
+
+
 class StatsQuery(BaseModel):
     topic: str
     subtopic: str | None = None
