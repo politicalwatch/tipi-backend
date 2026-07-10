@@ -9,3 +9,5 @@ tipi_backend.egg-info
 tipi_backend/settings.py
 
 local_config.py
+
+.env
