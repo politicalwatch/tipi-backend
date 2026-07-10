@@ -1,6 +1,8 @@
-from datetime import datetime
+from datetime import date, datetime
 import json
+import logging
 import time
+from functools import lru_cache
 from importlib import import_module as im
 
 from natsort import natsorted, ns
@@ -52,6 +54,8 @@ from tipi_data.utils import generate_id
 
 from tipi_backend.settings import Config
 from tipi_backend.api.parsers import SearchInitiativeParser, InitiativeParser
+
+log = logging.getLogger(__name__)
 
 
 """ TOPICS METHODS """
@@ -231,6 +235,88 @@ def search_speeches(params):
 
 def get_speech(id):
     return SpeechExtendedSchema.model_validate(Speeches.get(id))
+
+
+""" SEMANTIC SEARCH METHODS """
+
+
+@lru_cache(maxsize=1)
+def _natural_search():
+    """One env-configured qhld-ai service for the whole process: its clients are
+    cheap to build, but the entity resolver warms from the corpus (Mongo + a
+    Qdrant scan) on first use, so the instance must survive across requests.
+    Imported lazily so deployments that exclude the search namespace never pay
+    the qhld-ai (langchain et al.) import."""
+    from qhld_ai.application.search.natural_search import NaturalSearchSpeeches
+
+    return NaturalSearchSpeeches()
+
+
+@lru_cache(maxsize=256)
+def _parse_query(q, today_iso):
+    """Memoized LLM parse: "show more" repeats the same query with a longer
+    exclude list, and must not pay (nor re-run) the parse on every click."""
+    return _natural_search().parser.parse(q, date.fromisoformat(today_iso))
+
+
+def semantic_search_speeches(params):
+    """Natural-language grouped search: ``per_page`` distinct speeches (Qdrant
+    groups passages by speech_id), hydrated from Mongo into the same compact
+    card as the browse list. Requests one extra group as a ``has_more`` probe."""
+    today = date.today()
+    parsed = _parse_query(params["q"], today.isoformat())
+    result = _natural_search().execute(
+        params["q"],
+        today,
+        k=params["per_page"] + 1,
+        grouped=True,
+        highlights=params["highlights"],
+        exclude=set(params["exclude"]) or None,
+        parsed=parsed,
+    )
+    has_more = len(result.hits) > params["per_page"]
+    groups = result.hits[: params["per_page"]]
+
+    by_id = {}
+    if groups:
+        docs = Speeches.by_query_paginated(
+            {"_id": {"$in": [group.speech_id for group in groups]}}
+        )
+        by_id = {doc.id: doc for doc in docs}
+    results = []
+    for group in groups:  # keep Qdrant relevance order, not Mongo's date sort
+        speech = by_id.get(group.speech_id)
+        if speech is None:
+            log.warning("Indexed speech %s missing from Mongo", group.speech_id)
+            continue
+        results.append(
+            {
+                "speech": SpeechCompactSchema.model_validate(speech),
+                "score": group.score,
+                "highlights": [hit.payload.get("text", "") for hit in group.highlights],
+            }
+        )
+
+    resolution = result.resolution
+    meta = {
+        "q": params["q"],
+        "per_page": params["per_page"],
+        "count": len(results),
+        "has_more": has_more,
+        "semantic_query": result.semantic_query,
+        "filters": resolution.filters,
+        "notes": resolution.notes,
+        "unresolved": [
+            {
+                "field": entity.field,
+                "value": entity.value,
+                "blocking": entity.blocking,
+                "suggestion": entity.suggestion,
+            }
+            for entity in resolution.unresolved
+        ],
+    }
+    return meta, results
 
 
 def get_places():

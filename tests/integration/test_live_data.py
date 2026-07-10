@@ -10,6 +10,8 @@ Run with ``MONGO_*`` pointing at the prod copy, e.g. from the host:
 or inside the qhld-infra ``qhld-backend`` container (``MONGO_HOST=mongo``).
 """
 
+import os
+
 import pytest
 
 from tipi_data import db
@@ -68,3 +70,29 @@ def test_sessions_and_speeches_endpoints_live(client):
 
 def test_speech_missing_returns_404(client):
     assert client.get("/speeches/does-not-exist").status_code == 404
+
+
+def test_semantic_search_live_show_more(client):
+    """Smoke the full search stack (LLM parse → Qdrant grouped search → Mongo
+    hydration): distinct speeches per page, and an excluded second page that
+    doesn't repeat the first. Needs Qdrant + provider keys besides Mongo."""
+    if db.speeches.estimated_document_count() == 0:
+        pytest.skip("no speeches in the live DB yet")
+    if not (os.environ.get("OPENAI_API_KEY") and os.environ.get("ANTHROPIC_API_KEY")):
+        pytest.skip("AI provider keys not configured")
+
+    first = client.get("/speeches/search?q=vivienda&per_page=5")
+    if first.status_code == 503:
+        pytest.skip("search stack unreachable (Qdrant/embedding provider)")
+    body = first.json()
+    assert body["query_meta"]["semantic_query"]
+    ids = [r["speech"]["id"] for r in body["results"]]
+    assert len(ids) == len(set(ids)), "grouping must yield distinct speeches"
+    for result in body["results"]:
+        assert result["highlights"], "every result should carry passages"
+
+    if body["query_meta"]["has_more"] and ids:
+        exclude = "&".join(f"exclude={i}" for i in ids)
+        more = client.get(f"/speeches/search?q=vivienda&per_page=5&{exclude}").json()
+        assert not set(ids) & {r["speech"]["id"] for r in more["results"]}, \
+            "show more must not repeat already-shown speeches"

@@ -7,7 +7,7 @@ ParameterBag, *FieldParser) remain in ``parsers.py`` — they consume the dict p
 by ``query.model_dump()``.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class InitiativesQuery(BaseModel):
@@ -55,6 +55,17 @@ class SpeechesQuery(BaseModel):
     startdate: str | None = None
     enddate: str | None = None
     mention: str | None = None
+
+
+class SpeechSearchQuery(BaseModel):
+    """Natural-language semantic search. No ``page``: grouped vector search has no
+    offset, so "show more" echoes the already-shown speech ids back as repeated
+    ``exclude`` params and gets the next ``per_page`` fresh speeches."""
+
+    q: str = Field(min_length=2)
+    per_page: int = Field(default=12, ge=1, le=50)
+    highlights: int = Field(default=3, ge=1, le=10)
+    exclude: list[str] = Field(default_factory=list, max_length=500)
 
 
 class StatsQuery(BaseModel):

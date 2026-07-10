@@ -5,3 +5,4 @@ __pycache__
 htmlcov/
 tipi_backend.egg-info
 local_config.py
+.env

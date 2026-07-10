@@ -19,6 +19,7 @@ dependencies = [
     "python-pptx==1.0.2",
     "qhld-data",
     "qhld-tasks",
+    "qhld-ai",
 ]
 
 [dependency-groups]
@@ -31,10 +32,11 @@ dev = [
 ]
 
 [tool.uv.sources]
-# DEV (TFM speeches branch): qhld-data + qhld-tasks pinned to the paired
-# `feat/parliamentary-speech-analysis` branch. Revert both to tag pins before merge.
+# DEV (TFM speeches branch): qhld-data + qhld-tasks + qhld-ai pinned to the paired
+# `feat/parliamentary-speech-analysis` branch. Revert all to tag pins before merge.
 qhld-data  = { git = "https://github.com/politicalwatch/qhld-data.git", branch = "feat/parliamentary-speech-analysis" }
 qhld-tasks = { git = "https://github.com/politicalwatch/qhld-tasks.git", branch = "feat/parliamentary-speech-analysis" }
+qhld-ai    = { git = "https://github.com/politicalwatch/qhld-ai.git", branch = "feat/parliamentary-speech-analysis" }
 
 [tool.pytest.ini_options]
 # Listed unit-first so the fast no-infra tests run before the live-DB ones.
