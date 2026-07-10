@@ -11,9 +11,10 @@ from tipi_backend.api.serialization import serialize
 log = logging.getLogger(__name__)
 
 # Own router (namespace "search") so deployments without the AI stack (Qdrant,
-# provider keys) can drop it via EXCLUDE_NAMESPACES. Must be registered BEFORE
-# the speeches router or /speeches/{id} captures "/speeches/search".
-router = APIRouter(prefix="/speeches", tags=["search"])
+# provider keys) can drop it via EXCLUDE_NAMESPACES, but tagged "speeches" so
+# the docs list it with the other speech routes. Must be registered BEFORE the
+# speeches router or /speeches/{id} captures "/speeches/search".
+router = APIRouter(prefix="/speeches", tags=["speeches"])
 
 
 @router.get("/search")
