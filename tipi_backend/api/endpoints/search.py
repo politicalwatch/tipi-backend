@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
+from qhld_ai.domain.errors import NotASpeechQuery
 from tipi_backend.api.business import semantic_search_speeches
 from tipi_backend.api.request_models import SpeechSearchQuery
 from tipi_backend.api.serialization import serialize
@@ -30,6 +31,13 @@ def search_speeches_semantic(query: Annotated[SpeechSearchQuery, Query()]):
     """
     try:
         meta, results = semantic_search_speeches(query.model_dump())
+    except NotASpeechQuery:
+        # The input wasn't a speech search (a command, a question to the
+        # assistant, an injection). A deterministic client error, not a service
+        # outage — 422, so the frontend can tell it apart from the 503 below.
+        return JSONResponse(
+            status_code=422, content={"Error": "Not a speech search"}
+        )
     except Exception as e:
         log.error(e)
         return JSONResponse(
