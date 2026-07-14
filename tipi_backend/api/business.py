@@ -9,6 +9,7 @@ from natsort import natsorted, ns
 
 import tipi_tasks
 
+from tipi_data import DoesNotExist
 from tipi_data.models.alert import Alert, Search
 from tipi_data.models.scanned import Scanned as ScannedModel
 from tipi_data.repositories.alerts import Alerts
@@ -234,6 +235,14 @@ def search_speeches(params):
 
 
 def get_speech(id):
+    """An all-digits id is the Congress intervention id (``video_id``) — the
+    public, stable identifier once the sitting's video is published; anything
+    else is the internal ``_id`` (which also covers the pre-video window)."""
+    if id.isdigit():
+        try:
+            return SpeechExtendedSchema.model_validate(Speeches.get_by_video_id(id))
+        except DoesNotExist:
+            pass
     return SpeechExtendedSchema.model_validate(Speeches.get(id))
 
 

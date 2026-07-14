@@ -73,6 +73,12 @@ class _FakeSpeeches:
                 return d
         raise DoesNotExist(id)
 
+    def get_by_video_id(self, video_id):
+        for d in self.docs:
+            if d.video_id == video_id:
+                return d
+        raise DoesNotExist(video_id)
+
 
 class _FakeSessions(_FakeSpeeches):
     pass
@@ -106,6 +112,27 @@ def test_get_speech_detail_has_text_blocks(client, monkeypatch):
 def test_get_speech_missing_returns_404(client, monkeypatch):
     monkeypatch.setattr(business, "Speeches", _FakeSpeeches([]))
     assert client.get("/speeches/nope").status_code == 404
+
+
+def test_get_speech_by_video_id(client, monkeypatch):
+    speech = _speech()
+    speech.video_id = "752062"
+    monkeypatch.setattr(business, "Speeches", _FakeSpeeches([speech]))
+    # an all-digits id resolves through the Congress intervention id
+    assert client.get("/speeches/752062").json()["id"] == "sp1"
+    # the internal id keeps working
+    assert client.get("/speeches/sp1").json()["id"] == "sp1"
+
+
+def test_get_speech_numeric_falls_back_to_internal_id(client, monkeypatch):
+    # a pre-video speech whose internal id happens to be all digits
+    speech = _speech()
+    speech.id = "123456"
+    monkeypatch.setattr(business, "Speeches", _FakeSpeeches([speech]))
+    assert client.get("/speeches/123456").json()["id"] == "123456"
+
+    monkeypatch.setattr(business, "Speeches", _FakeSpeeches([]))
+    assert client.get("/speeches/999999").status_code == 404
 
 
 def test_session_detail_carries_roster_and_count(client, monkeypatch):

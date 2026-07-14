@@ -36,7 +36,10 @@ def list_speeches(query: Annotated[SpeechesQuery, Query()]):
 
 @router.get("/{id}")
 def get_speech_item(id: str):
-    """Returns a speech in full, including its per-language text blocks and mentions."""
+    """Returns a speech in full, including its per-language text blocks and mentions.
+
+    ``id`` accepts the Congress intervention id (``video_id``, all digits) or the
+    internal speech id."""
     try:
         return serialize(get_speech(id))
     except Exception as e:
