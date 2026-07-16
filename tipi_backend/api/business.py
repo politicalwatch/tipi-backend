@@ -5,6 +5,7 @@ import time
 from functools import lru_cache
 from importlib import import_module as im
 
+from langsmith import traceable
 from natsort import natsorted, ns
 
 import tipi_tasks
@@ -268,10 +269,16 @@ def _parse_query(q, today_iso):
     return _natural_search().parser.parse(q, date.fromisoformat(today_iso))
 
 
+@traceable(name="semantic_search_speeches", run_type="chain")
 def semantic_search_speeches(params):
     """Natural-language grouped search: ``per_page`` distinct speeches (Qdrant
     groups passages by speech_id), hydrated from Mongo into the same compact
-    card as the browse list. Requests one extra group as a ``has_more`` probe."""
+    card as the browse list. Requests one extra group as a ``has_more`` probe.
+
+    The traceable decorator makes this the LangSmith root span for the request,
+    so the memoized parse (which runs OUTSIDE ``execute`` and is skipped on
+    "show more" cache hits) and the ``natural_search`` span land in one trace
+    instead of two roots. Inert unless LANGSMITH_TRACING is set."""
     today = date.today()
     parsed = _parse_query(params["q"], today.isoformat())
     result = _natural_search().execute(
