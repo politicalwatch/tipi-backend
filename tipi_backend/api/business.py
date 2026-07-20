@@ -335,6 +335,26 @@ def semantic_search_speeches(params):
     return meta, results
 
 
+def speech_passages(id, params):
+    """Every relevance-floored passage of a single speech for a query, for the
+    detail page (which highlights all matches, not just the few on a result
+    card). The id is resolved the same way as ``get_speech`` (video_id or
+    internal _id) to the canonical ``_id`` that keys the Qdrant chunks —
+    ``Speeches.get`` raises ``DoesNotExist`` for an unknown speech. The parse is
+    the memoized one, so arriving here from a results page skips the LLM call."""
+    today = date.today()
+    if id.isdigit():
+        try:
+            speech = Speeches.get_by_video_id(id)
+        except DoesNotExist:
+            speech = Speeches.get(id)
+    else:
+        speech = Speeches.get(id)
+    parsed = _parse_query(params["q"], today.isoformat())
+    result = _natural_search().passages(params["q"], today, speech.id, parsed=parsed)
+    return [hit.payload.get("text", "") for hit in result.hits]
+
+
 def get_places():
     return [PlaceSchema.model_validate(p) for p in Places.get_all()]
 

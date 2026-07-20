@@ -68,6 +68,13 @@ class SpeechSearchQuery(BaseModel):
     exclude: list[str] = Field(default_factory=list, max_length=500)
 
 
+class SpeechPassagesQuery(BaseModel):
+    """Every relevance-floored passage of one speech for a query (detail-page
+    highlighting). No count param: the reranker floor bounds the set, not a cap."""
+
+    q: str = Field(min_length=2)
+
+
 class StatsQuery(BaseModel):
     topic: str
     subtopic: str | None = None

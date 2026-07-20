@@ -5,8 +5,9 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 from qhld_ai.domain.errors import NotASpeechQuery
-from tipi_backend.api.business import semantic_search_speeches
-from tipi_backend.api.request_models import SpeechSearchQuery
+from tipi_data import DoesNotExist
+from tipi_backend.api.business import semantic_search_speeches, speech_passages
+from tipi_backend.api.request_models import SpeechPassagesQuery, SpeechSearchQuery
 from tipi_backend.api.serialization import serialize
 
 log = logging.getLogger(__name__)
@@ -54,3 +55,28 @@ def search_speeches_semantic(query: Annotated[SpeechSearchQuery, Query()]):
             for result in results
         ],
     }
+
+
+@router.get("/{id}/passages")
+def speech_passages_for_query(id: str, query: Annotated[SpeechPassagesQuery, Query()]):
+    """Every relevance-floored passage of one speech for a natural-language query.
+
+    The results page shows a few matching passages per speech; the detail page
+    uses this to highlight ALL of them in the transcript. Two path segments after
+    ``/speeches`` so it never shadows (nor is shadowed by) ``/speeches/{id}``.
+    """
+    try:
+        return {"passages": speech_passages(id, query.model_dump())}
+    except DoesNotExist:
+        return JSONResponse(
+            status_code=404, content={"Error": "Speech not found"}
+        )
+    except NotASpeechQuery:
+        return JSONResponse(
+            status_code=422, content={"Error": "Not a speech search"}
+        )
+    except Exception as e:
+        log.error(e)
+        return JSONResponse(
+            status_code=503, content={"Error": "Search is temporarily unavailable"}
+        )
