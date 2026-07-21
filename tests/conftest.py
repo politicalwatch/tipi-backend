@@ -37,16 +37,31 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tipi_backend.app import create_app
-from tipi_backend.settings import Config
+from tipi_backend.infrastructure.config.settings import get_settings
 
-# Configure before the app is built.
-Config.USE_ALERTS = True
+
+@pytest.fixture(autouse=True)
+def _reset_settings_cache():
+    """Clear the ``get_settings`` lru_cache around every test.
+
+    ``Settings`` is read once and memoised, so without this a test that uses
+    ``monkeypatch.setenv`` would either see a stale cached value or leak its
+    override into later tests. Clearing before and after keeps each test
+    isolated (and from whatever ``.env`` happens to contain).
+    """
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest.fixture(scope="session")
 def app():
-    """Build the FastAPI app once for the whole test session."""
-    return create_app(config=Config)
+    """Build the FastAPI app once for the whole test session.
+
+    ``USE_ALERTS`` is set to ``True`` via the ``os.environ.setdefault`` at the top
+    of this file, so the alerts routers are mounted when the app is built here.
+    """
+    return create_app()
 
 
 @pytest.fixture(scope="session")

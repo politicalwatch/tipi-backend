@@ -16,7 +16,7 @@ import tipi_tasks
 from tipi_backend.api import cache
 from tipi_backend.api.business import get_tags, get_kbs
 from tipi_backend.api.request_models import KbQuery
-from tipi_backend.settings import Config
+from tipi_backend.infrastructure.config.settings import get_settings
 
 
 log = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ def extract(
         # The empty default also stops Swagger "Try it out" from sending `"string"`.
         kb = get_kbs({"knowledgebase": knowledgebase or None})
 
-        cache_key = Config.CACHE_TAGS
+        cache_key = get_settings().cache_tags
         tags = cache.get(cache_key)
         if tags is None:
             tags = get_tags()
@@ -118,7 +118,7 @@ def extract(
 
         text_length = len(content.split())
 
-        if text_length >= Config.TAGGER_MAX_WORDS:
+        if text_length >= get_settings().tagger_max_words:
             task = tipi_tasks.tagger.extract_tags_from_text.apply_async((content, tags))
             eta_time = int((text_length / 1000) * 4)
             return {

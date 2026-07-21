@@ -8,7 +8,7 @@ from tipi_backend.api import cache
 from tipi_backend.api.business import get_deputies, get_deputy, get_deputies_birthdays
 from tipi_backend.api.request_models import AuthorsQuery
 from tipi_backend.api.serialization import serialize
-from tipi_backend.settings import Config
+from tipi_backend.infrastructure.config.settings import get_settings
 
 
 log = logging.getLogger(__name__)
@@ -19,7 +19,8 @@ router = APIRouter(prefix="/deputies", tags=["deputies"])
 @router.get("/")
 def list_deputies(query: Annotated[AuthorsQuery, Query()]):
     """Returns list of active deputies."""
-    cache_key = Config.CACHE_DEPUTIES_COMPACT if query.compact else Config.CACHE_DEPUTIES
+    settings = get_settings()
+    cache_key = settings.cache_deputies_compact if query.compact else settings.cache_deputies
     deputies = cache.get(cache_key)
     if deputies is None:
         deputies = serialize(get_deputies(query.model_dump()))

@@ -8,7 +8,7 @@ fixture, and ``knowledgebase`` is passed explicitly so ``get_kbs`` never hits Mo
 
 import pytest
 
-from tipi_backend.settings import Config
+from tipi_backend.infrastructure.config.settings import get_settings
 from tests.helpers import (
     build_tags_from_fixture,
     load_knowledgebase,
@@ -33,7 +33,8 @@ def inject_tags(monkeypatch, kb_tags):
 @pytest.fixture
 def sync_word_limit(monkeypatch):
     """Keep every scanner_text fixture in the synchronous tagging path."""
-    monkeypatch.setattr(Config, "TAGGER_MAX_WORDS", 6000)
+    monkeypatch.setenv("TAGGER_MAX_WORDS", "6000")
+    get_settings.cache_clear()
 
 
 # One high-confidence (topic, tag) pair per fixture — a sanity anchor that the fixture
@@ -119,7 +120,8 @@ def test_async_dispatch(client, monkeypatch):
     task id in-process — no Redis/worker, and the heavy task never actually runs — so
     we exercise the endpoint's genuine *dispatch decision* rather than a mock.
     """
-    monkeypatch.setattr(Config, "TAGGER_MAX_WORDS", 10)
+    monkeypatch.setenv("TAGGER_MAX_WORDS", "10")
+    get_settings.cache_clear()
 
     res = client.post(
         "/tagger/", data={"text": "word " * 11, "knowledgebase": "politicas,ods"}

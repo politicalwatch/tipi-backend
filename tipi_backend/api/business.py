@@ -54,7 +54,7 @@ from tipi_data.schemas.speech import (
 from tipi_data.schemas.topic import TopicSchema, TopicExtendedSchema
 from tipi_data.utils import generate_id
 
-from tipi_backend.settings import Config
+from tipi_backend.infrastructure.config.settings import get_settings
 from tipi_backend.api.parsers import SearchInitiativeParser, InitiativeParser
 
 log = logging.getLogger(__name__)
@@ -364,7 +364,7 @@ def get_initiative_types():
 
 
 def get_initiative_status():
-    ism = im("tipi_backend.api.managers.{}.initiative_status".format(Config.COUNTRY))
+    ism = im("tipi_backend.api.managers.{}.initiative_status".format(get_settings().country))
     return ism.InitiativeStatusManager().get_values()
 
 

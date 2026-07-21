@@ -19,7 +19,7 @@ from tipi_data.schemas.initiative import (
 )
 
 from tipi_backend.api.validators import validate_date
-from tipi_backend.settings import Config
+from tipi_backend.infrastructure.config.settings import get_settings
 
 
 class ParameterBag():
@@ -144,7 +144,7 @@ class SearchInitiativeParser:
                 code = InitiativeTypes.get_by_name(value).id
             except Exception:
                 code = ''
-            itm = im('tipi_backend.api.managers.{}.initiative_type'.format(Config.COUNTRY))
+            itm = im('tipi_backend.api.managers.{}.initiative_type'.format(get_settings().country))
             return itm.InitiativeTypeManager().get_search_for(code)
 
     class TopicFieldParser():

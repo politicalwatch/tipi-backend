@@ -1,7 +1,6 @@
 import logging
 import logging.config
 import os
-from os import environ as env
 
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
@@ -13,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from tipi_data import DoesNotExist
 
-from tipi_backend.settings import Config
+from tipi_backend.infrastructure.config.settings import get_settings
 from tipi_backend.api.ratelimit import limiter
 from tipi_backend.api.endpoints.topics import router as topics_router
 from tipi_backend.api.endpoints.deputies import router as deputies_router
@@ -65,15 +64,14 @@ def _configure_logging():
     logging.config.fileConfig(logging_conf_path, disable_existing_loggers=False)
 
 
-def create_app(config=Config):
+def create_app():
     _configure_logging()
 
-    name = env.get("NAME", "test")
-    description = env.get(
-        "DESCRIPTION",
-        "This document includes all the methods that the {} API offers its users.",
-    ).format(name)
-    version = env.get("VERSION", "1.0")
+    settings = get_settings()
+
+    name = settings.name
+    description = settings.description.format(name)
+    version = settings.version
 
     app = FastAPI(title="{} API Documentation".format(name), description=description, version=version)
 
@@ -89,7 +87,7 @@ def create_app(config=Config):
     @app.middleware("http")
     async def limit_upload_size(request: Request, call_next):
         content_length = request.headers.get("content-length")
-        if content_length and int(content_length) > config.MAX_CONTENT_LENGTH:
+        if content_length and int(content_length) > settings.max_content_length:
             return JSONResponse(
                 status_code=413, content={"message": "Request entity too large."}
             )
@@ -125,13 +123,13 @@ def create_app(config=Config):
         return {"status": "ok", "docs": "/docs", "openapi": "/openapi.json"}
 
     # --- Routers (root-mounted; honor EXCLUDE_NAMESPACES) ---
-    excluded = env.get("EXCLUDE_NAMESPACES", "")
+    excluded = settings.exclude_namespaces
     for ns_name, router in ROUTERS:
         if ns_name in excluded:
             continue
         app.include_router(router)
 
-    if config.USE_ALERTS:
+    if settings.use_alerts:
         if "alerts" not in excluded:
             app.include_router(alerts_router)
         app.include_router(emails_router)
@@ -142,16 +140,17 @@ def create_app(config=Config):
 def main():
     import uvicorn
 
+    settings = get_settings()
     uvicorn.run(
         "tipi_backend.wsgi:app",
         host=config_host(),
-        port=int(Config.PORT),
-        reload=Config.FLASK_DEBUG,
+        port=settings.port,
+        reload=settings.debug,
     )
 
 
 def config_host():
-    return Config.IP
+    return get_settings().ip
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
 """Thin Redis cache helpers (replaces Flask-Caching).
 
 Preserves the previous behavior: pickled Python objects stored in Redis DB 8
-(per ``Config.CACHE``), same keys and TTLs as before. The client is lazy, so
-importing this module does not require Redis to be reachable.
+(per the ``cache_redis_*`` settings), same keys and TTLs as before. The client is
+lazy, so importing this module does not require Redis to be reachable.
 
 ``redis.asyncio`` offers a drop-in async client for the Phase 3 async work.
 """
@@ -11,14 +11,14 @@ import pickle
 
 import redis
 
-from tipi_backend.settings import Config
+from tipi_backend.infrastructure.config.settings import get_settings
 
-_cfg = Config.CACHE
+_settings = get_settings()
 _client = redis.Redis(
-    host=_cfg["CACHE_REDIS_HOST"],
-    port=_cfg["CACHE_REDIS_PORT"],
-    password=_cfg["CACHE_REDIS_PASSWORD"] or None,
-    db=_cfg["CACHE_REDIS_DB"],
+    host=_settings.cache_redis_host,
+    port=_settings.cache_redis_port,
+    password=_settings.cache_redis_password or None,
+    db=_settings.cache_redis_db,
 )
 
 
