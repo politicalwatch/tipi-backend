@@ -20,7 +20,10 @@ dependencies = [
     "python-pptx==1.0.2",
     "qhld-data",
     "qhld-tasks",
-    "qhld-ai",
+    # Backend serves search only: Novita embeddings/reranker + OpenAI llm
+    # (all langchain-openai) + BM25 query embedding (fastembed). The [backend]
+    # extra pulls exactly that — no spaCy, no torch, no other provider SDKs.
+    "qhld-ai[backend]",
 ]
 
 [dependency-groups]
@@ -30,6 +33,9 @@ dev = [
     "pytest-cov==7.1.0",
     "httpx2==2.4.0",
     "locust==2.44.3",
+    # Ollama embeddings for local dev only; the prod image runs with --no-dev
+    # and stays on the lean [backend] set above. Other providers install ad-hoc.
+    "qhld-ai[ollama]",
 ]
 
 [tool.uv.sources]
