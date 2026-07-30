@@ -300,7 +300,7 @@ def semantic_search_speeches(params):
         )
         by_id = {doc.id: doc for doc in docs}
     results = []
-    for group in groups:  # keep Qdrant relevance order, not Mongo's date sort
+    for group in groups:  # keep Qdrant's own order, not Mongo's date sort
         speech = by_id.get(group.speech_id)
         if speech is None:
             log.warning("Indexed speech %s missing from Mongo", group.speech_id)
@@ -319,7 +319,12 @@ def semantic_search_speeches(params):
         "per_page": params["per_page"],
         "count": len(results),
         "has_more": has_more,
+        # The topic the parser extracted, empty when the query named only filters
+        # — and then ``browse`` is set: these are the newest speeches matching the
+        # filters, ordered by date, and their passages matched nothing (there was
+        # nothing to match), so a client must not present them as matches.
         "semantic_query": result.semantic_query,
+        "browse": result.browse,
         "filters": resolution.filters,
         "notes": resolution.notes,
         "unresolved": [

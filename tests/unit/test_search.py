@@ -183,6 +183,31 @@ def test_speech_missing_from_mongo_is_skipped(client, monkeypatch):
     assert body["query_meta"]["count"] == 1
 
 
+def test_filter_only_query_is_flagged_as_a_browse(client, monkeypatch):
+    # "intervenciones de Pedro Sánchez" names no topic, so the service browses the
+    # newest matching speeches. The meta must say so and publish no topic, or the
+    # frontend labels the raw question as the "Tema" it searched for.
+    class _BrowseService(_SpyService):
+        def execute(self, query, today, k=10, grouped=False, highlights=3,
+                    exclude=None, parsed=None):
+            self.calls.append({"query": query, "k": k, "exclude": exclude})
+            return NaturalResult(parsed=parsed, resolution=self.resolution,
+                                 semantic_query="", hits=self.groups,
+                                 grouped=grouped, browse=True)
+
+    _install(monkeypatch, _BrowseService([_group("sp1", 0.0, ("empieza así",))]))
+    body = client.get("/speeches/search?q=intervenciones de Pedro Sánchez").json()
+    assert body["query_meta"]["browse"] is True
+    assert body["query_meta"]["semantic_query"] == ""
+    assert body["results"][0]["highlights"] == ["empieza así"]
+
+
+def test_topical_query_is_not_flagged_as_a_browse(client, monkeypatch):
+    _install(monkeypatch, _SpyService([_group("sp1")]))
+    body = client.get("/speeches/search?q=vivienda joven").json()
+    assert body["query_meta"]["browse"] is False
+
+
 def test_service_failure_returns_503(client, monkeypatch):
     def _boom():
         raise RuntimeError("qdrant down")
