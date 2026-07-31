@@ -13,6 +13,7 @@ from slowapi import _rate_limit_exceeded_handler
 from tipi_data import DoesNotExist
 
 from tipi_backend.infrastructure.config.settings import get_settings
+from tipi_backend.api.business import get_dataset_updates
 from tipi_backend.api.ratelimit import limiter
 from tipi_backend.api.endpoints.topics import router as topics_router
 from tipi_backend.api.endpoints.deputies import router as deputies_router
@@ -120,7 +121,15 @@ def create_app():
     # --- Root status (so `/` returns a friendly 200 instead of 404; docs live at /docs) ---
     @app.get("/", tags=["status"])
     def root():
-        return {"status": "ok", "docs": "/docs", "openapi": "/openapi.json"}
+        """Service status and how fresh the data is: ``last_updated`` is the most
+        recent of the per-dataset extraction timestamps in ``datasets`` (null until
+        the engine has run once)."""
+        return {
+            "status": "ok",
+            **get_dataset_updates(),
+            "docs": "/docs",
+            "openapi": "/openapi.json",
+        }
 
     # --- Routers (root-mounted; honor EXCLUDE_NAMESPACES) ---
     excluded = settings.exclude_namespaces

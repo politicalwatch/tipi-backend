@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import json
 import logging
 import time
@@ -14,6 +14,7 @@ from tipi_data import DoesNotExist
 from tipi_data.models.alert import Alert, Search
 from tipi_data.models.scanned import Scanned as ScannedModel
 from tipi_data.repositories.alerts import Alerts
+from tipi_data.repositories.dataset_updates import DatasetUpdates
 from tipi_data.repositories.deputies import Deputies
 from tipi_data.repositories.initiatives import Initiatives
 from tipi_data.repositories.initiativetypes import InitiativeTypes
@@ -58,6 +59,41 @@ from tipi_backend.infrastructure.config.settings import get_settings
 from tipi_backend.api.parsers import SearchInitiativeParser, InitiativeParser
 
 log = logging.getLogger(__name__)
+
+
+""" STATUS METHODS """
+
+
+def _as_utc_iso(moment):
+    """``tipi_data``'s client is deliberately not ``tz_aware``, so stored UTC
+    datetimes come back naive. Say so explicitly rather than serving a timestamp
+    with no zone. Whole seconds: this is a freshness date, not a measurement."""
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return (moment.astimezone(timezone.utc)
+            .replace(microsecond=0).isoformat().replace("+00:00", "Z"))
+
+
+def get_dataset_updates():
+    """When each dataset was last rewritten by the engine (which stamps it as part
+    of invalidating the cached responses), plus the most recent of them.
+
+    Unreadable bookkeeping must not take the status endpoint down with it, so a
+    failure here reports "unknown" instead of raising.
+    """
+    try:
+        updates = DatasetUpdates.get_all()
+    except Exception:
+        log.exception("Cannot read when the data was last updated")
+        return {"last_updated": None, "datasets": {}}
+
+    moments = {dataset: moment for dataset, moment in updates.items() if moment}
+    newest = max(moments.values(), default=None)
+    return {
+        "last_updated": _as_utc_iso(newest) if newest else None,
+        "datasets": {dataset: _as_utc_iso(moment)
+                     for dataset, moment in sorted(moments.items())},
+    }
 
 
 """ TOPICS METHODS """

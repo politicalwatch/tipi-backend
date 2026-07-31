@@ -2531,7 +2531,7 @@ wheels = [
 [[package]]
 name = "qhld-ai"
 version = "0.1.0"
-source = { git = "https://github.com/politicalwatch/qhld-ai.git?branch=feat%2Fparliamentary-speech-analysis#c8ef3cdf5c9f57f3356667e2a54df62b30cafd7d" }
+source = { git = "https://github.com/politicalwatch/qhld-ai.git?branch=feat%2Fparliamentary-speech-analysis#5adf148a11305511e8006dc0756b66a556b3be8f" }
 dependencies = [
     { name = "httpx" },
     { name = "langchain-core" },
@@ -2614,7 +2614,7 @@ dev = [
 [[package]]
 name = "qhld-data"
 version = "2.0.1"
-source = { git = "https://github.com/politicalwatch/qhld-data.git?branch=feat%2Fparliamentary-speech-analysis#3b3d0d6f37a46b6412cfbe66ac2e2be9c83db67c" }
+source = { git = "https://github.com/politicalwatch/qhld-data.git?branch=feat%2Fparliamentary-speech-analysis#3b94023d5b5cb769923208a8fcabf8653be7aad8" }
 dependencies = [
     { name = "pydantic" },
     { name = "pymongo" },
@@ -2625,7 +2625,7 @@ dependencies = [
 [[package]]
 name = "qhld-tasks"
 version = "2.0.1"
-source = { git = "https://github.com/politicalwatch/qhld-tasks.git?branch=feat%2Fparliamentary-speech-analysis#eea4d9006a1fccbc8f559af22d849da025b85f71" }
+source = { git = "https://github.com/politicalwatch/qhld-tasks.git?branch=feat%2Fparliamentary-speech-analysis#10b66d382060ecc43bd09ff3ad6463d97ba0e689" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "jinja2" },
