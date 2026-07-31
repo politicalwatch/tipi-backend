@@ -74,9 +74,17 @@ def _as_utc_iso(moment):
             .replace(microsecond=0).isoformat().replace("+00:00", "Z"))
 
 
+# Written by the last step of the extraction pipeline rather than by a dataset, so
+# it says when a run *finished*. Anything that stops the pipeline leaves it behind.
+EXTRACTION_KEY = "extraction"
+
+
 def get_dataset_updates():
-    """When each dataset was last rewritten by the engine (which stamps it as part
-    of invalidating the cached responses), plus the most recent of them.
+    """When the data was last updated, and when each dataset was last rewritten.
+
+    ``last_updated`` is the end of the last complete extraction run. Until a run has
+    recorded one it falls back to the newest dataset, which is all older engines
+    write — that keeps environments where the pipeline does not run (dev) meaningful.
 
     Unreadable bookkeeping must not take the status endpoint down with it, so a
     failure here reports "unknown" instead of raising.
@@ -88,9 +96,10 @@ def get_dataset_updates():
         return {"last_updated": None, "datasets": {}}
 
     moments = {dataset: moment for dataset, moment in updates.items() if moment}
-    newest = max(moments.values(), default=None)
+    completed = moments.pop(EXTRACTION_KEY, None)
+    last_updated = completed or max(moments.values(), default=None)
     return {
-        "last_updated": _as_utc_iso(newest) if newest else None,
+        "last_updated": _as_utc_iso(last_updated) if last_updated else None,
         "datasets": {dataset: _as_utc_iso(moment)
                      for dataset, moment in sorted(moments.items())},
     }
