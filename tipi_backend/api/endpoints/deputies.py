@@ -19,12 +19,18 @@ router = APIRouter(prefix="/deputies", tags=["deputies"])
 @router.get("/")
 def list_deputies(query: Annotated[AuthorsQuery, Query()]):
     """Returns list of active deputies."""
+    # Name-filtered responses are not cached: the key only distinguishes compact
+    # from full, so caching one would serve a subset as the whole list.
+    if query.name:
+        return serialize(get_deputies(query.model_dump()))
+
     settings = get_settings()
     cache_key = settings.cache_deputies_compact if query.compact else settings.cache_deputies
     deputies = cache.get(cache_key)
     if deputies is None:
         deputies = serialize(get_deputies(query.model_dump()))
-        cache.set(cache_key, deputies, timeout=60 * 60)
+        # No expiry: the engine drops this key when it rewrites the deputies.
+        cache.set(cache_key, deputies)
     return deputies
 
 

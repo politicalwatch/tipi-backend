@@ -19,11 +19,18 @@ router = APIRouter(prefix="/parliamentary-groups", tags=["parliamentary-groups"]
 @router.get("/")
 def list_parliamentarygroups(query: Annotated[AuthorsQuery, Query()]):
     """Returns list of parliamentary groups."""
-    cache_key = get_settings().cache_groups
+    # Name-filtered responses are not cached: the keys only tell compact from
+    # full, so caching one would serve a subset as the whole list.
+    if query.name:
+        return serialize(get_parliamentarygroups(query.model_dump()))
+
+    settings = get_settings()
+    cache_key = settings.cache_groups_compact if query.compact else settings.cache_groups
     parliamentary_groups = cache.get(cache_key)
     if parliamentary_groups is None:
         parliamentary_groups = serialize(get_parliamentarygroups(query.model_dump()))
-        cache.set(cache_key, parliamentary_groups, timeout=60 * 60)
+        # No expiry: the engine drops this key when it recalculates the groups.
+        cache.set(cache_key, parliamentary_groups)
     return parliamentary_groups
 
 

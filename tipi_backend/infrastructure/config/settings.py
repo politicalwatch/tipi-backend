@@ -39,9 +39,11 @@ class Settings(BaseSettings):
     max_content_length: int = 20 * 1024 * 1024  # 20 MiB (was eval()'d from env)
     tagger_max_words: int = 2500
 
-    # Cache keys
+    # Cache keys. One per response variant: a single key per endpoint would serve
+    # the compact list as the full one, whichever request populated it first.
     cache_tags: str = "tagging-tags"
     cache_groups: str = "parliamentary-groups"
+    cache_groups_compact: str = "parliamentary-groups-compact"
     cache_deputies: str = "deputies"
     cache_deputies_compact: str = "deputies-compact"
 
