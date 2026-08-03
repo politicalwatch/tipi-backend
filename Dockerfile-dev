@@ -16,3 +16,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project
 
 ENV PATH="/app/.venv/bin:$PATH"
+
+# Same default and same caveats as the production Dockerfile — see the long comment there.
+# The dev compose supplies the uvicorn command and no longer passes --forwarded-allow-ips,
+# so without this line dev would silently fall back to uvicorn's own "127.0.0.1" and key
+# every caller on the docker gateway address, i.e. one shared rate-limit bucket.
+ENV FORWARDED_ALLOW_IPS="*"
