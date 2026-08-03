@@ -29,6 +29,7 @@ from tipi_backend.api.endpoints.tagger import router as tagger_router
 from tipi_backend.api.endpoints.scanned import router as scanned_router
 from tipi_backend.api.endpoints.sessions import router as sessions_router
 from tipi_backend.api.endpoints.search import router as search_router
+from tipi_backend.api.endpoints.search_ratings import router as search_ratings_router
 from tipi_backend.api.endpoints.speeches import router as speeches_router
 from tipi_backend.api.endpoints.alerts import router as alerts_router
 from tipi_backend.manage_alerts_by_email import router as emails_router
@@ -55,6 +56,10 @@ ROUTERS = [
     # would otherwise capture "/speeches/search".
     ("search", search_router),
     ("speeches", speeches_router),
+    # "ratings", not "search-ratings": the exclusion check below is a substring test
+    # against the whole env string, so a namespace containing "search" would make
+    # EXCLUDE_NAMESPACES=search-ratings silently drop the semantic search router too.
+    ("ratings", search_ratings_router),
 ]
 
 

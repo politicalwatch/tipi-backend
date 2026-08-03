@@ -13,6 +13,7 @@ import tipi_tasks
 from tipi_data import DoesNotExist
 from tipi_data.models.alert import Alert, Search
 from tipi_data.models.scanned import Scanned as ScannedModel
+from tipi_data.models.search_rating import SearchRating
 from tipi_data.repositories.alerts import Alerts
 from tipi_data.repositories.dataset_updates import DatasetUpdates
 from tipi_data.repositories.deputies import Deputies
@@ -22,6 +23,7 @@ from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.repositories.parliamentarygroups import ParliamentaryGroups
 from tipi_data.repositories.places import Places
 from tipi_data.repositories.scanned import Scanned
+from tipi_data.repositories.search_ratings import SearchRatings
 from tipi_data.repositories.sessions import Sessions
 from tipi_data.repositories.speeches import Speeches
 from tipi_data.repositories.stats import Stats
@@ -668,6 +670,31 @@ def save_scanned(payload):
         "excerpt": scanned.excerpt,
         "expiration": str(scanned.expiration),
     }
+
+
+def save_search_rating(payload):
+    """Store one rating of one speech search.
+
+    Append-only, so unlike ``save_alert`` there is no lookup-then-merge: rating the
+    same search twice keeps both answers, and reconciling them is left to whoever
+    reads the collection.
+    """
+    result_ids = payload.get("result_ids") or []
+    rating = SearchRating(
+        rating=payload["rating"],
+        query=payload["query"],
+        query_meta=payload.get("query_meta") or {},
+        reasons=payload.get("reasons") or [],
+        comment=payload.get("comment"),
+        result_ids=result_ids,
+        # Derived, never taken from the request: a client-supplied count could only
+        # ever disagree with the ids it sent alongside it.
+        results_count=len(result_ids),
+        corpus=payload.get("corpus"),
+    )
+    saved = SearchRatings.save(rating)
+    if not saved.inserted_id:
+        raise Exception
 
 
 def search_verified_scanned(query):

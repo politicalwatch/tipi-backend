@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     max_content_length: int = 20 * 1024 * 1024  # 20 MiB (was eval()'d from env)
     tagger_max_words: int = 2500
 
+    # Shared secret the Nuxt server sends when forwarding a search rating. There are
+    # no user accounts yet, so this is what distinguishes "came through our frontend"
+    # from "was curled at the endpoint". Empty means reject every rating: a
+    # misconfigured deploy should fail closed, not accept anonymous writes.
+    search_rating_token: str = ""
+
     # Cache keys. One per response variant: a single key per endpoint would serve
     # the compact list as the full one, whichever request populated it first.
     cache_tags: str = "tagging-tags"

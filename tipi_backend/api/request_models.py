@@ -117,6 +117,28 @@ class AlertBody(BaseModel):
     search: str
 
 
+class SearchRatingBody(BaseModel):
+    """A user's rating of one speech search.
+
+    ``query_meta`` is echoed back verbatim from the search response and stored as an
+    opaque dict rather than modelled here: its shape belongs to the query parser, and
+    the field we care about (``unresolved`` — the people it failed to recognise) would
+    only get flattened by re-declaring it. The caps exist so a public endpoint can't be
+    used to write unbounded documents.
+
+    ``results_count`` is deliberately absent: it is derived from ``result_ids`` when
+    saving, so a client cannot report a count that disagrees with the ids it sent.
+    """
+
+    rating: int = Field(ge=1, le=5)
+    query: str = Field(min_length=1, max_length=500)
+    query_meta: dict = Field(default_factory=dict)
+    reasons: list[str] = Field(default_factory=list, max_length=10)
+    comment: str | None = Field(default=None, max_length=500)
+    result_ids: list[str] = Field(default_factory=list, max_length=100)
+    corpus: str | None = None
+
+
 class ScannedBody(BaseModel):
     title: str
     excerpt: str
