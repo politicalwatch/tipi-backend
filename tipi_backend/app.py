@@ -9,12 +9,11 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from slowapi.errors import RateLimitExceeded
-from slowapi import _rate_limit_exceeded_handler
 from tipi_data import DoesNotExist
 
 from tipi_backend.infrastructure.config.settings import get_settings
 from tipi_backend.api.business import get_dataset_updates
-from tipi_backend.api.ratelimit import limiter
+from tipi_backend.api.ratelimit import limiter, rate_limit_exceeded_handler
 from tipi_backend.api.endpoints.topics import router as topics_router
 from tipi_backend.api.endpoints.deputies import router as deputies_router
 from tipi_backend.api.endpoints.parliamentarygroups import router as parliamentarygroups_router
@@ -88,6 +87,11 @@ def create_app():
         allow_origins=["*"],
         allow_methods=["*"],
         allow_headers=["*"],
+        # allow_headers covers the REQUEST; a response header stays invisible to JS on
+        # another origin unless it is exposed. The frontend is cross-origin, so without
+        # this the Retry-After our 429s carry could not be read and the UI would fall
+        # back to a vague "wait a while".
+        expose_headers=["Retry-After"],
     )
 
     @app.middleware("http")
@@ -101,7 +105,8 @@ def create_app():
 
     # --- Rate limiting (slowapi) ---
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    # Ours, not slowapi's: same body, plus a Retry-After. See tipi_backend.api.ratelimit.
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
     # --- Error handlers (parity with the old flask-restx handlers) ---
     @app.exception_handler(DoesNotExist)

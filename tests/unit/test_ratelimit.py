@@ -5,10 +5,15 @@ behind each limited route is mocked out, so these isolate the limiter itself:
 ``POST /alerts`` is capped at 10/hour, and the two paid search routes carry the caps
 documented in ``tipi_backend.api.endpoints.search``.
 
-What is NOT covered here: the shared ``_SPEND_CEILING`` (2000/hour across both search
-routes and all callers). Volume-testing it would mean 2000 requests per run, and the
-value is read at decoration time so it cannot be monkeypatched to something cheaper.
-The per-route caps below are far tighter, so nothing reaches the ceiling in practice.
+What is NOT covered here:
+
+- The shared ``_SPEND_CEILING`` (2000/hour across both search routes and all callers).
+  Volume-testing it would mean 2000 requests per run, and the value is read at decoration
+  time so it cannot be monkeypatched to something cheaper. The per-route caps below are far
+  tighter, so nothing reaches the ceiling in practice.
+- Whether a *browser* can read the ``Retry-After`` asserted below. That depends on the
+  CORS ``expose_headers`` list in ``tipi_backend.app``, and TestClient is same-origin, so
+  no test here can tell a missing entry from a present one. Only the running frontend can.
 """
 
 import pytest
@@ -28,6 +33,8 @@ def test_rate_limit_alerts(client, monkeypatch):
 
     res = client.post("/alerts", json=payload)
     assert res.status_code == 429
+    # Our handler, not slowapi's, so every limited route gets the header — not just search.
+    assert 1 <= int(res.headers["retry-after"]) <= 3600
 
 
 def _stub_search(monkeypatch):
@@ -52,6 +59,9 @@ def test_rate_limit_search(client, monkeypatch):
 
     res = client.get("/speeches/search?q=vivienda")
     assert res.status_code == 429
+    # The minute window is the one that failed, so the wait is reported against it and not
+    # against the hour or day cap — that distinction is the whole point of the header.
+    assert 1 <= int(res.headers["retry-after"]) <= 60
 
 
 def test_rate_limit_search_counts_rejected_queries_too(client, monkeypatch):
