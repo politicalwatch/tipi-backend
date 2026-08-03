@@ -1,12 +1,35 @@
+"""Natural-language speech search.
+
+Both routes here cost real money per call — an LLM parse, an embedding and a rerank —
+and both are reached straight from the browser (the frontend calls the public API
+directly; only the ratings POST goes through the Nuxt server). That makes the peer
+address a real client, so per-IP limits mean something here in a way they do not for
+``/search-ratings``.
+
+The caps are sized for a *human* reading results, not for a script: a page of cards
+takes tens of seconds to read, so nobody sustains more than a few searches a minute,
+and the per-minute cap is therefore not what separates a person from a bot — a bot
+paces itself. The hour and day buckets do that work. Registered accounts are the
+planned release valve for the shared-address cases these numbers do squeeze (a
+newsroom or a campus behind one NAT); until then free anonymous use stays tight.
+
+Caveat before trusting any of it: the container runs uvicorn with
+``--forwarded-allow-ips '*'``, which makes it read the LEFTMOST ``X-Forwarded-For``
+entry — a value the caller controls. A client rotating that header resets its own
+bucket. Narrowing that flag to the real proxy address is what makes the per-IP caps
+enforceable; until then ``_SPEND_CEILING`` is the only limit that actually holds.
+"""
+
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse
 
 from qhld_ai.domain.errors import NotASpeechQuery
 from tipi_data import DoesNotExist
 from tipi_backend.api.business import semantic_search_speeches, speech_passages
+from tipi_backend.api.ratelimit import limiter
 from tipi_backend.api.request_models import SpeechPassagesQuery, SpeechSearchQuery
 from tipi_backend.api.serialization import serialize
 
@@ -18,9 +41,31 @@ log = logging.getLogger(__name__)
 # speeches router or /speeches/{id} captures "/speeches/search".
 router = APIRouter(prefix="/speeches", tags=["speeches"])
 
+# ONE bucket for both routes and every caller: a spend circuit-breaker, not a usage
+# limit. Per-IP caps do nothing against a distributed scraper, nor against the
+# spoofable header above, and this is what bounds the provider bill in those cases.
+# Set well above plausible real traffic (~33x one address's hourly cap). It is the
+# number to RAISE as the audience grows, since exhausting it stops search for
+# everyone — which is the trade we accepted for having a ceiling at all.
+_SPEND_CEILING = "2000/hour"
+
+# Per address. 10/minute absorbs a human's burst of reformulations; 60/hour is already
+# several times the heaviest research pace we can imagine; 200/day is what bounds a
+# scraper patient enough to stay under both of the others. slowapi charges BEFORE the
+# handler runs, so the 422 and 503 paths below spend quota too — probing the endpoint
+# with junk costs the caller, which is what we want.
+_SEARCH_LIMITS = "10/minute;60/hour;200/day"
+# Roughly 2.5x search: one query legitimately fans out to several detail pages, and
+# the frontend caches per (speech, query) for the session, so revisits are free.
+_PASSAGE_LIMITS = "30/minute;150/hour;500/day"
+
 
 @router.get("/search")
-def search_speeches_semantic(query: Annotated[SpeechSearchQuery, Query()]):
+@limiter.shared_limit(_SPEND_CEILING, scope="speech-search", key_func=lambda: "all")
+@limiter.limit(_SEARCH_LIMITS)
+def search_speeches_semantic(
+    request: Request, query: Annotated[SpeechSearchQuery, Query()]
+):
     """Natural-language semantic search over speeches.
 
     Returns `per_page` distinct speeches (passages are grouped by speech), each
@@ -63,7 +108,11 @@ def search_speeches_semantic(query: Annotated[SpeechSearchQuery, Query()]):
 
 
 @router.get("/{id}/passages")
-def speech_passages_for_query(id: str, query: Annotated[SpeechPassagesQuery, Query()]):
+@limiter.shared_limit(_SPEND_CEILING, scope="speech-search", key_func=lambda: "all")
+@limiter.limit(_PASSAGE_LIMITS)
+def speech_passages_for_query(
+    request: Request, id: str, query: Annotated[SpeechPassagesQuery, Query()]
+):
     """Every relevance-floored passage of one speech for a natural-language query.
 
     The results page shows a few matching passages per speech; the detail page
