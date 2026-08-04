@@ -7,11 +7,16 @@ business function and route.
 """
 
 from datetime import date
+from types import SimpleNamespace
 
 import pytest
 
 from qhld_ai.application.search.natural_search import NaturalResult
-from qhld_ai.application.search.resolve_entities import Resolution, UnresolvedEntity
+from qhld_ai.application.search.resolve_entities import (
+    AmbiguousMatch,
+    Resolution,
+    UnresolvedEntity,
+)
 from qhld_ai.domain.ports.query_parser import ParsedQuery
 from qhld_ai.domain.ports.vector_store import SearchHit, SpeechGroup
 
@@ -58,6 +63,9 @@ class _SpyService:
         self.calls = []
         self.passage_calls = []
         self.passage_texts = passages
+        # The real service carries its qhld-ai settings; gap recording stamps each
+        # sighting with the parser that produced it.
+        self.settings = SimpleNamespace(query_parser_llm_model="nano")
 
     def execute(self, query, today, k=10, grouped=False, highlights=3,
                 exclude=None, parsed=None):
@@ -290,3 +298,149 @@ def test_passages_service_failure_returns_503(client, monkeypatch):
 def test_passages_validation_short_query(client):
     assert client.get("/speeches/sp1/passages").status_code == 400
     assert client.get("/speeches/sp1/passages?q=a").status_code == 400   # min_length=2
+
+
+# --- passive NER mining: what the search could not identify -------------------
+
+
+@pytest.fixture
+def recorded(monkeypatch):
+    """Capture the gap events instead of writing them to Mongo."""
+    events = []
+
+    class _FakeQueryGaps:
+        @staticmethod
+        def record(event):
+            events.append(event)
+
+    monkeypatch.setattr(business, "QueryGaps", _FakeQueryGaps)
+    return events
+
+
+def test_unresolved_person_is_recorded_as_a_gap(client, monkeypatch, recorded):
+    resolution = Resolution(
+        filters={"date": {"gte": "2024-01-01"}},
+        unresolved=[UnresolvedEntity("mentions", "señor Rueda", blocking=True,
+                                     suggestion="'Rueda Perelló, Patricia' (87)")])
+    _install(monkeypatch, _SpyService([], resolution=resolution), speech_ids=[])
+
+    client.get("/speeches/search?q=qué dijo el señor Rueda sobre la sanidad")
+
+    assert len(recorded) == 1
+    event = recorded[0]
+    assert (event.field, event.outcome) == ("mentions", "unresolved")
+    # The courtesy form is stripped for the key but the surface is kept verbatim:
+    # deciding that two surfaces are one person is a review-time judgement.
+    assert event.key == "rueda"
+    assert event.value == "señor Rueda"
+    assert event.blocking is True
+    assert event.suggestion == "'Rueda Perelló, Patricia' (87)"
+    assert event.query == "qué dijo el señor Rueda sobre la sanidad"
+    assert event.semantic_query == "vivienda"       # what the parser understood
+    assert event.filters == {"date": {"gte": "2024-01-01"}}
+    assert event.parser_model == "nano"
+
+
+def test_the_same_person_typed_differently_shares_one_key(client, monkeypatch, recorded):
+    # Users omit accents; the corpus does not. Without folding them these would be filed
+    # as two unrelated people.
+    for surface in ("Sánchez", "sanchez", "el señor Sánchez"):
+        resolution = Resolution(
+            unresolved=[UnresolvedEntity("mentions", surface, blocking=False)])
+        _install(monkeypatch, _SpyService([], resolution=resolution), speech_ids=[])
+        client.get(f"/speeches/search?q=algo sobre {surface}")
+
+    assert [e.key for e in recorded] == ["sanchez", "sanchez", "sanchez"]
+    assert [e.value for e in recorded] == ["Sánchez", "sanchez", "el señor Sánchez"]
+
+
+@pytest.mark.parametrize("surface", ["Su Señoría", "de la", "señora"])
+def test_surfaces_that_name_nobody_are_not_recorded(client, monkeypatch, recorded,
+                                                    surface):
+    # A courtesy form with no name left, or a residue of function words, would otherwise
+    # become a "gap" of its own and bury the real ones.
+    resolution = Resolution(
+        unresolved=[UnresolvedEntity("mentions", surface, blocking=False)])
+    _install(monkeypatch, _SpyService([], resolution=resolution), speech_ids=[])
+
+    client.get(f"/speeches/search?q=algo sobre {surface}")
+
+    assert recorded == []
+
+
+def test_an_arbitrarily_broken_tie_is_recorded_with_both_candidates(
+        client, monkeypatch, recorded):
+    # This class resolves successfully, so it never reaches ``unresolved`` — before the
+    # resolver reported it, mining would have said these collisions did not exist.
+    tied = ["Rueda Perelló, Patricia", "Rueda Pérez, Juan Carlos"]
+    resolution = Resolution(
+        filters={"speaker": tied[0]},
+        ambiguous=[AmbiguousMatch("speaker", "Rueda", tied[0], tied)])
+    _install(monkeypatch, _SpyService([_group("sp1")], resolution=resolution))
+
+    client.get("/speeches/search?q=intervenciones de Rueda sobre sanidad")
+
+    assert len(recorded) == 1
+    event = recorded[0]
+    assert (event.field, event.outcome, event.key) == ("speaker", "ambiguous", "rueda")
+    assert event.chosen == tied[0]
+    assert event.tied == tied
+    assert event.blocking is False
+
+
+def test_fields_that_are_not_catalog_gaps_are_ignored(client, monkeypatch, recorded):
+    # A closed vocabulary (group, lang) or an invented role phrase says something about
+    # the parse, not about a person missing from our data.
+    resolution = Resolution(unresolved=[
+        UnresolvedEntity("group", "Grupo Inexistente", blocking=False),
+        UnresolvedEntity("lang", "klingon", blocking=True),
+        UnresolvedEntity("role", "ministro de la Nada", blocking=True),
+    ])
+    _install(monkeypatch, _SpyService([], resolution=resolution), speech_ids=[])
+
+    client.get("/speeches/search?q=algo del Grupo Inexistente")
+
+    assert recorded == []
+
+
+def test_passages_do_not_record_gaps(client, monkeypatch, recorded):
+    # The detail page re-resolves the same query to highlight it. Recording there would
+    # count one person's single search several times over.
+    resolution = Resolution(
+        unresolved=[UnresolvedEntity("mentions", "Jacinta Pérez", blocking=True)])
+    _install(monkeypatch, _SpyService([], resolution=resolution), speech_ids=["sp1"])
+
+    client.get("/speeches/sp1/passages?q=algo que mencione a Jacinta Pérez")
+
+    assert recorded == []
+
+
+def test_a_failing_recorder_does_not_fail_the_search(client, monkeypatch):
+    class _BrokenQueryGaps:
+        @staticmethod
+        def record(event):
+            raise RuntimeError("mongo down")
+
+    monkeypatch.setattr(business, "QueryGaps", _BrokenQueryGaps)
+    resolution = Resolution(
+        unresolved=[UnresolvedEntity("mentions", "Jacinta Pérez", blocking=False)])
+    _install(monkeypatch, _SpyService([_group("sp1")], resolution=resolution))
+
+    res = client.get("/speeches/search?q=algo sobre Jacinta Pérez")
+
+    assert res.status_code == 200
+    assert [r["speech"]["id"] for r in res.json()["results"]] == ["sp1"]
+
+
+def test_theme_keys_keep_the_form_the_corpus_is_stamped_with(client, monkeypatch,
+                                                             recorded):
+    # Entity keys are compared against the corpus's own canonical keys ("guerra de
+    # gaza"), so they must NOT be pruned like a person surface is: dropping "de" would
+    # give a key that matches nothing anybody could act on.
+    resolution = Resolution(
+        unresolved=[UnresolvedEntity("entities", "la guerra de Gaza", blocking=False)])
+    _install(monkeypatch, _SpyService([_group("sp1")], resolution=resolution))
+
+    client.get("/speeches/search?q=debates sobre la guerra de Gaza")
+
+    assert [(e.field, e.key) for e in recorded] == [("entities", "guerra de gaza")]

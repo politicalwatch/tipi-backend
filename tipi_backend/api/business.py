@@ -2,6 +2,7 @@ from datetime import date, datetime, timezone
 import json
 import logging
 import time
+import unicodedata
 from functools import lru_cache
 from importlib import import_module as im
 
@@ -13,6 +14,7 @@ import tipi_tasks
 from tipi_data import DoesNotExist
 from tipi_data.models.alert import Alert, Search
 from tipi_data.models.scanned import Scanned as ScannedModel
+from tipi_data.models.query_gap import AMBIGUOUS, UNRESOLVED, QueryGapEvent
 from tipi_data.models.search_rating import SearchRating
 from tipi_data.repositories.alerts import Alerts
 from tipi_data.repositories.dataset_updates import DatasetUpdates
@@ -22,6 +24,7 @@ from tipi_data.repositories.initiativetypes import InitiativeTypes
 from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.repositories.parliamentarygroups import ParliamentaryGroups
 from tipi_data.repositories.places import Places
+from tipi_data.repositories.query_gaps import QueryGaps
 from tipi_data.repositories.scanned import Scanned
 from tipi_data.repositories.search_ratings import SearchRatings
 from tipi_data.repositories.sessions import Sessions
@@ -316,6 +319,97 @@ def _parse_query(q, today_iso):
     return _natural_search().parser.parse(q, date.fromisoformat(today_iso))
 
 
+# Which resolver fields are worth mining. ``mentions`` and ``speaker`` are people, the
+# point of the exercise; ``entities`` is the theme vocabulary, and a miss there is the
+# same kind of gap for nearly no extra work. The rest are dictionary lookups over closed
+# vocabularies (group, constituency, lang) or a role phrase the parser invented, so a
+# miss says more about the parse than about our data.
+_MINED_FIELDS = ("mentions", "speaker", "entities")
+_PERSON_FIELDS = ("mentions", "speaker")
+# Tokens that survive person-name normalisation but name nobody, so they must not become
+# keys of their own. Index-side this class is caught by a part-of-speech gate, which needs
+# spaCy; the backend does not ship it, and for query text a short list covers it: what is
+# left after the courtesy and role words are stripped is either a name or one of these.
+# Person fields only — an entity key keeps its prepositions ("guerra de gaza").
+_KEYLESS_TOKENS = frozenset({
+    "de", "del", "la", "las", "el", "los", "y", "e", "o", "u", "a", "al", "en", "que",
+    "don", "dona", "doña",
+})
+
+
+def _gap_key(field, value):
+    """The canonical form that groups sightings of one surface, or "" to skip it.
+
+    Reuses the resolver's own normalisers so a key here means what it means in the search
+    path, with one addition for people: ``normalize_span`` keeps accents (index-side it
+    reads properly accented transcripts), while query text is typed by users who leave
+    them out — without folding them, "Sánchez" and "sanchez" would be filed as two
+    different people.
+    """
+    from qhld_ai.domain.entities import normalize_entity
+    from qhld_ai.domain.mentions import normalize_span
+
+    if field not in _PERSON_FIELDS:
+        # Left exactly as ``normalize_entity`` produces it, which is the key the corpus
+        # itself is stamped with ("guerra de gaza"). It has its own stoplist and returns
+        # "" for junk, and pruning function words here would only break that parity.
+        return normalize_entity(value)
+    # Courtesy and role words go first ("el señor Rueda" → "rueda"), which also empties a
+    # span that was ONLY a courtesy form ("Su Señoría").
+    key = _strip_accents(normalize_span(value)).strip()
+    tokens = [t for t in key.split() if t not in _KEYLESS_TOKENS]
+    return " ".join(tokens) if tokens else ""
+
+
+def _strip_accents(text):
+    return "".join(c for c in unicodedata.normalize("NFD", text)
+                   if not unicodedata.combining(c))
+
+
+def _record_query_gaps(query, resolution, semantic_query):
+    """Keep the people and themes this search could not identify.
+
+    Free evidence for catalog curation: the resolver already reports what it could not
+    resolve, and — since it learned to say so — what it resolved only by breaking a tie
+    arbitrarily. Both used to be logged and discarded.
+
+    Called from the grouped search ONLY. ``speech_passages`` re-resolves the same query to
+    highlight a detail page, so recording there would count one person's single search
+    several times over.
+
+    Never raises: a search must not fail because bookkeeping did.
+    """
+    try:
+        parser_model = _natural_search().settings.query_parser_llm_model
+        events = []
+        for entity in resolution.unresolved:
+            if entity.field not in _MINED_FIELDS:
+                continue
+            key = _gap_key(entity.field, entity.value)
+            if not key:
+                continue
+            events.append(QueryGapEvent(
+                field=entity.field, key=key, outcome=UNRESOLVED, value=entity.value,
+                blocking=entity.blocking, suggestion=entity.suggestion,
+                query=query, semantic_query=semantic_query,
+                filters=resolution.filters, parser_model=parser_model))
+        for match in getattr(resolution, "ambiguous", []):
+            if match.field not in _MINED_FIELDS:
+                continue
+            key = _gap_key(match.field, match.value)
+            if not key:
+                continue
+            events.append(QueryGapEvent(
+                field=match.field, key=key, outcome=AMBIGUOUS, value=match.value,
+                chosen=match.chosen, tied=match.tied,
+                query=query, semantic_query=semantic_query,
+                filters=resolution.filters, parser_model=parser_model))
+        for event in events:
+            QueryGaps.record(event)
+    except Exception:
+        log.exception("Could not record the query gaps for %r", query)
+
+
 @traceable(name="semantic_search_speeches", run_type="chain")
 def semantic_search_speeches(params):
     """Natural-language grouped search: ``per_page`` distinct speeches (Qdrant
@@ -384,6 +478,9 @@ def semantic_search_speeches(params):
             for entity in resolution.unresolved
         ],
     }
+    # After the response is assembled, so bookkeeping can never come between the user and
+    # their results.
+    _record_query_gaps(params["q"], resolution, result.semantic_query)
     return meta, results
 
 
