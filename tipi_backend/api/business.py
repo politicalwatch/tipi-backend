@@ -474,6 +474,10 @@ def semantic_search_speeches(params):
                 "value": entity.value,
                 "blocking": entity.blocking,
                 "suggestion": entity.suggestion,
+                # Which way it failed. Null is "nobody answers to that name";
+                # "filtered_out" is "recognised, then ruled out by the rest of the
+                # query" — two things a client has to word differently.
+                "reason": getattr(entity, "reason", None),
             }
             for entity in resolution.unresolved
         ],

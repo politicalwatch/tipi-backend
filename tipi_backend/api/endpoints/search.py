@@ -75,7 +75,9 @@ def search_speeches_semantic(
     `query_meta` carries what the parser understood (semantic_query, resolved
     filters, notes, unresolved entities) and `has_more`. `query_meta.labels` maps
     the filter values that mean nothing on their own — the person ids a `mentions`
-    filter holds — to the name to show for them.
+    filter holds — to the name to show for them. An unresolved entity's `reason` is
+    null when nobody answers to that value, and `"filtered_out"` when it WAS
+    recognised and the rest of the query rules it out ("Montero de Sumar").
 
     A query that names only filters and no topic ("intervenciones de Pedro
     Sánchez") is a browse: `query_meta.browse` is true, `semantic_query` is empty,

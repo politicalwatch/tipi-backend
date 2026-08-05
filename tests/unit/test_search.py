@@ -180,7 +180,7 @@ def test_blocked_resolution_yields_honest_zero_with_meta(client, monkeypatch):
     assert body["query_meta"]["has_more"] is False
     assert body["query_meta"]["unresolved"] == [
         {"field": "mentions", "value": "Santiago Segura", "blocking": True,
-         "suggestion": "Santiago Abascal"}]
+         "suggestion": "Santiago Abascal", "reason": None}]
 
 
 def test_speech_missing_from_mongo_is_skipped(client, monkeypatch):
@@ -474,6 +474,23 @@ def test_a_tie_broken_on_evidence_reports_the_single_name_it_kept(client, monkey
     meta = client.get("/speeches/search?q=Montero sobre financiación").json()["query_meta"]
 
     assert meta["ambiguous"][0]["kept"] == [tied[0]]
+
+
+def test_an_unresolved_entity_says_which_way_it_failed(client, monkeypatch):
+    # "Montero de Sumar": the name was recognised and then ruled out by the group, which a
+    # client has to word differently from a name nobody answers to.
+    resolution = Resolution(
+        filters={"group": "GSUMAR"},
+        unresolved=[
+            UnresolvedEntity("speaker", "Montero", blocking=True, reason="filtered_out"),
+            UnresolvedEntity("mentions", "Jacinta Pérez", blocking=True),
+        ])
+    _install(monkeypatch, _SpyService([], resolution=resolution), speech_ids=[])
+
+    meta = client.get("/speeches/search?q=qué ha dicho Montero de Sumar").json()["query_meta"]
+
+    assert [(e["value"], e["reason"]) for e in meta["unresolved"]] == [
+        ("Montero", "filtered_out"), ("Jacinta Pérez", None)]
 
 
 def test_a_mentions_filter_is_sent_with_the_name_behind_each_id(client, monkeypatch):
