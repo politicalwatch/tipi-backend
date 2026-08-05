@@ -490,6 +490,10 @@ def semantic_search_speeches(params):
             }
             for match in getattr(resolution, "ambiguous", [])
         ],
+        # How to say the filter values that are opaque outside the search package, as
+        # ``{field: {value: label}}`` — today the person ids a mentions filter holds.
+        # A client shows the label and still filters on the value.
+        "labels": getattr(resolution, "labels", {}),
     }
     # After the response is assembled, so bookkeeping can never come between the user and
     # their results.

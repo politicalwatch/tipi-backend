@@ -476,6 +476,25 @@ def test_a_tie_broken_on_evidence_reports_the_single_name_it_kept(client, monkey
     assert meta["ambiguous"][0]["kept"] == [tied[0]]
 
 
+def test_a_mentions_filter_is_sent_with_the_name_behind_each_id(client, monkeypatch):
+    # The filter is the id the payload is keyed by; without this map a client can only
+    # show "isabel-diaz-ayuso" back to the person who searched for Ayuso.
+    resolution = Resolution(
+        filters={"mentions": "isabel-diaz-ayuso"},
+        labels={"mentions": {"isabel-diaz-ayuso": "Díaz Ayuso, Isabel"}})
+    _install(monkeypatch, _SpyService([_group("sp1")], resolution=resolution))
+
+    meta = client.get("/speeches/search?q=quién ha mencionado a Ayuso").json()["query_meta"]
+
+    assert meta["labels"] == {"mentions": {"isabel-diaz-ayuso": "Díaz Ayuso, Isabel"}}
+
+
+def test_a_query_with_nothing_opaque_to_name_reports_no_labels(client, monkeypatch):
+    _install(monkeypatch, _SpyService([_group("sp1")]))
+    meta = client.get("/speeches/search?q=vivienda").json()["query_meta"]
+    assert meta["labels"] == {}
+
+
 def test_a_query_with_no_collision_reports_no_ambiguity(client, monkeypatch):
     _install(monkeypatch, _SpyService([_group("sp1")]))
     meta = client.get("/speeches/search?q=vivienda").json()["query_meta"]

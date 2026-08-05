@@ -73,7 +73,9 @@ def search_speeches_semantic(
     matching passages. Stateless "show more": echo the speech ids already shown
     as repeated `exclude` params to get the next `per_page` fresh speeches.
     `query_meta` carries what the parser understood (semantic_query, resolved
-    filters, notes, unresolved entities) and `has_more`.
+    filters, notes, unresolved entities) and `has_more`. `query_meta.labels` maps
+    the filter values that mean nothing on their own — the person ids a `mentions`
+    filter holds — to the name to show for them.
 
     A query that names only filters and no topic ("intervenciones de Pedro
     Sánchez") is a browse: `query_meta.browse` is true, `semantic_query` is empty,
