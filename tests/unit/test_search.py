@@ -444,3 +444,39 @@ def test_theme_keys_keep_the_form_the_corpus_is_stamped_with(client, monkeypatch
     client.get("/speeches/search?q=debates sobre la guerra de Gaza")
 
     assert [(e.field, e.key) for e in recorded] == [("entities", "guerra de gaza")]
+
+
+def test_a_still_tied_surname_is_reported_with_everyone_it_filtered_on(
+        client, monkeypatch):
+    # Nothing failed here, so it must not show up as ``unresolved`` — but the results
+    # belong to both Ruedas, and a client that says "showing Patricia" would be lying.
+    tied = ["Rueda Perelló, Patricia", "Rueda Pérez, Juan Carlos"]
+    resolution = Resolution(
+        filters={"speaker": tied},
+        ambiguous=[AmbiguousMatch("speaker", "Rueda", tied[0], tied, kept=tied)])
+    _install(monkeypatch, _SpyService([_group("sp1")], resolution=resolution))
+
+    meta = client.get("/speeches/search?q=Rueda sobre sanidad").json()["query_meta"]
+
+    assert meta["unresolved"] == []
+    assert meta["ambiguous"] == [
+        {"field": "speaker", "value": "Rueda", "chosen": tied[0],
+         "tied": tied, "kept": tied}]
+
+
+def test_a_tie_broken_on_evidence_reports_the_single_name_it_kept(client, monkeypatch):
+    tied = ["Montero Cuadrado, María Jesús", "Vaquero Montero, Maribel"]
+    resolution = Resolution(
+        filters={"speaker": tied[0]},
+        ambiguous=[AmbiguousMatch("speaker", "Montero", tied[0], tied, kept=[tied[0]])])
+    _install(monkeypatch, _SpyService([_group("sp1")], resolution=resolution))
+
+    meta = client.get("/speeches/search?q=Montero sobre financiación").json()["query_meta"]
+
+    assert meta["ambiguous"][0]["kept"] == [tied[0]]
+
+
+def test_a_query_with_no_collision_reports_no_ambiguity(client, monkeypatch):
+    _install(monkeypatch, _SpyService([_group("sp1")]))
+    meta = client.get("/speeches/search?q=vivienda").json()["query_meta"]
+    assert meta["ambiguous"] == []

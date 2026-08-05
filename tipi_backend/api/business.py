@@ -477,6 +477,19 @@ def semantic_search_speeches(params):
             }
             for entity in resolution.unresolved
         ],
+        # Values several people answered to. Nothing failed — ``kept`` is what the search
+        # actually filtered on — but when it holds more than one name the results belong
+        # to all of them, so a client can offer to narrow instead of implying one person.
+        "ambiguous": [
+            {
+                "field": match.field,
+                "value": match.value,
+                "chosen": match.chosen,
+                "tied": match.tied,
+                "kept": match.kept,
+            }
+            for match in getattr(resolution, "ambiguous", [])
+        ],
     }
     # After the response is assembled, so bookkeeping can never come between the user and
     # their results.
