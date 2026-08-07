@@ -11,6 +11,11 @@ from natsort import natsorted, ns
 
 import tipi_tasks
 
+# Imported eagerly, unlike the search service below: this module of qhld_ai is pure
+# domain logic with no dependencies of its own, so it costs nothing to a deployment
+# that excludes the search namespace.
+from qhld_ai.domain.subtitles import aligned_text, subtitle_track
+
 from tipi_data import DoesNotExist
 from tipi_data.models.alert import Alert, Search
 from tipi_data.models.scanned import Scanned as ScannedModel
@@ -28,6 +33,7 @@ from tipi_data.repositories.query_gaps import QueryGaps
 from tipi_data.repositories.scanned import Scanned
 from tipi_data.repositories.search_ratings import SearchRatings
 from tipi_data.repositories.sessions import Sessions
+from tipi_data.repositories.speech_alignments import SpeechAlignments
 from tipi_data.repositories.speeches import Speeches
 from tipi_data.repositories.stats import Stats
 from tipi_data.repositories.tags import Tags
@@ -56,6 +62,7 @@ from tipi_data.schemas.session import SessionSchema
 from tipi_data.schemas.speech import (
     SpeechCompactSchema,
     SpeechExtendedSchema,
+    SubtitleTrackOut,
 )
 from tipi_data.schemas.topic import TopicSchema, TopicExtendedSchema
 from tipi_data.utils import generate_id
@@ -285,16 +292,59 @@ def search_speeches(params):
     return total, pages, params["page"], params["per_page"], speeches
 
 
-def get_speech(id):
-    """An all-digits id is the Congress intervention id (``video_id``) — the
-    public, stable identifier once the sitting's video is published; anything
-    else is the internal ``_id`` (which also covers the pre-video window)."""
+def _resolve_speech(id):
+    """The speech an id names. An all-digits id is the Congress intervention id
+    (``video_id``) — the public, stable identifier once the sitting's video is
+    published; anything else is the internal ``_id`` (which also covers the
+    pre-video window). Raises ``DoesNotExist`` for an unknown speech."""
     if id.isdigit():
         try:
-            return SpeechExtendedSchema.model_validate(Speeches.get_by_video_id(id))
+            return Speeches.get_by_video_id(id)
         except DoesNotExist:
             pass
-    return SpeechExtendedSchema.model_validate(Speeches.get(id))
+    return Speeches.get(id)
+
+
+def get_speech(id):
+    speech = _resolve_speech(id)
+    out = SpeechExtendedSchema.model_validate(speech)
+    out.subtitles = _subtitle_track_of(speech)
+    return out
+
+
+def _subtitle_track_of(speech):
+    """The subtitle track a page may load for this speech, or ``None``.
+
+    Read through the same drift guard the track itself is served through, so the
+    page never advertises subtitles that would 404 on request: cues carry offsets
+    rather than text, and offsets into a transcript that has since been re-cleaned
+    would caption one sentence with another.
+    """
+    summary = SpeechAlignments.summary(speech.id)
+    if summary is None:
+        return None
+    text = aligned_text(speech.speech, summary.get("block_index"),
+                        summary.get("lang"), summary.get("text_sha256"),
+                        summary.get("text_length"))
+    if text is None:
+        log.warning(f"{speech.id} has an alignment made against different text")
+        return None
+    return SubtitleTrackOut(lang=summary.get("lang"))
+
+
+def speech_subtitles(id):
+    """The WebVTT track of one speech, or ``None`` if it has no usable one.
+
+    Rendered here rather than stored: the track is a projection of the stored cue
+    numbers over the stored transcript, so a correction to the text reaches the
+    subtitles with no re-alignment and the two can never disagree.
+    """
+    speech = _resolve_speech(id)
+    try:
+        alignment = SpeechAlignments.get(speech.id)
+    except DoesNotExist:
+        return None
+    return subtitle_track(alignment, speech.speech)
 
 
 """ SEMANTIC SEARCH METHODS """
@@ -508,18 +558,11 @@ def semantic_search_speeches(params):
 def speech_passages(id, params):
     """Every relevance-floored passage of a single speech for a query, for the
     detail page (which highlights all matches, not just the few on a result
-    card). The id is resolved the same way as ``get_speech`` (video_id or
-    internal _id) to the canonical ``_id`` that keys the Qdrant chunks —
-    ``Speeches.get`` raises ``DoesNotExist`` for an unknown speech. The parse is
-    the memoized one, so arriving here from a results page skips the LLM call."""
+    card). The id is resolved to the canonical ``_id`` that keys the Qdrant
+    chunks, and an unknown speech raises ``DoesNotExist``. The parse is the
+    memoized one, so arriving here from a results page skips the LLM call."""
     today = date.today()
-    if id.isdigit():
-        try:
-            speech = Speeches.get_by_video_id(id)
-        except DoesNotExist:
-            speech = Speeches.get(id)
-    else:
-        speech = Speeches.get(id)
+    speech = _resolve_speech(id)
     parsed = _parse_query(params["q"], today.isoformat())
     result = _natural_search().passages(params["q"], today, speech.id, parsed=parsed)
     return [hit.payload.get("text", "") for hit in result.hits]
