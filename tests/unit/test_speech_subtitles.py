@@ -1,16 +1,17 @@
-"""Tier-1 tests for the subtitle track a player loads — no Mongo.
+"""Tier-1 tests for the subtitle tracks a player loads — no Mongo.
 
-The cues live in their own collection and carry character offsets rather than text,
-so what these cover is the join: the track is rendered from the offsets over the
-stored transcript, and it is withheld whenever that transcript is no longer the one
-the cues were made against.
+The cues live in their own collection, one document per speech and language, and carry
+character offsets rather than text. So what these cover is the join: a track is rendered
+from the offsets over the stored transcript, the right language is served for the
+language asked for, and a track is withheld whenever that transcript is no longer the
+one its cues were made against.
 """
 
 import pytest
 
 from tipi_data import DoesNotExist
 from tipi_data.models.speech import Speech
-from tipi_data.models.speech_alignment import Cue, SpeechAlignment
+from tipi_data.models.speech_alignment import Cue, SpeechAlignment, track_id
 
 from qhld_ai.domain.subtitles import text_fingerprint
 
@@ -20,20 +21,30 @@ pytestmark = pytest.mark.unit
 
 
 TEXT = "Muchas gracias, presidente. He escuchado con atención."
+GALEGO = "Grazas, presidente. Escoitei con atención os seus argumentos."
 
 
-def _speech(text=TEXT, lang="es"):
+def _speech(text=TEXT, lang="es", blocks=None):
     return Speech(
         _id="sp1", video_id="726567", references=["R1"], session_id="s1",
         speaker="Saiz Delgado, Elma", order=1,
-        speech=[{"lang": lang, "text": text, "original": True}],
+        speech=blocks or [{"lang": lang, "text": text, "original": True}],
     )
 
 
-def _alignment(text=TEXT, lang="es"):
+def _bilingual(original=GALEGO, translation=TEXT):
+    """A co-official intervention: the original followed by its Spanish reading."""
+    return _speech(blocks=[
+        {"lang": "gl", "text": original, "original": True},
+        {"lang": "es", "text": translation, "original": False},
+    ])
+
+
+def _alignment(text=TEXT, lang="es", block_index=0, original=True):
     digest, length = text_fingerprint(text)
     return SpeechAlignment(
-        _id="sp1", lang=lang, block_index=0,
+        _id=track_id("sp1", lang), speech_id="sp1", lang=lang,
+        block_index=block_index, original=original,
         cues=[Cue(start_ms=3420, end_ms=7180, char_start=0, char_end=27),
               Cue(start_ms=7180, end_ms=11000, char_start=28, char_end=54)],
         text_sha256=digest, text_length=length, score=97.0, verdict="ok")
@@ -57,30 +68,37 @@ class _FakeSpeeches:
 
 
 class _FakeAlignments:
-    def __init__(self, alignment=None):
-        self.alignment = alignment
+    """Stands in for the collection, keyed the way the real one is."""
 
-    def summary(self, id):
-        if self.alignment is None:
+    def __init__(self, alignments=()):
+        self.by_lang = {a.lang: a for a in alignments}
+
+    def summary(self, id, lang):
+        alignment = self.by_lang.get(lang)
+        if alignment is None:
             return None
-        return {k: v for k, v in self.alignment.to_bson().items() if k != "cues"}
+        return {k: v for k, v in alignment.to_bson().items() if k != "cues"}
 
-    def get(self, id):
-        if self.alignment is None:
+    def summaries(self, id, langs):
+        return [s for s in (self.summary(id, lang) for lang in langs)
+                if s is not None]
+
+    def get(self, id, lang):
+        if lang not in self.by_lang:
             raise DoesNotExist(id)
-        return self.alignment
+        return self.by_lang[lang]
 
 
-def _corpus(monkeypatch, speech=None, alignment=None):
+def _corpus(monkeypatch, speech=None, alignments=()):
     monkeypatch.setattr(business, "Speeches",
                         _FakeSpeeches([speech or _speech()]))
-    monkeypatch.setattr(business, "SpeechAlignments", _FakeAlignments(alignment))
+    monkeypatch.setattr(business, "SpeechAlignments", _FakeAlignments(alignments))
 
 
 # ---- the track ---------------------------------------------------------------------
 
 def test_track_is_webvtt_with_the_transcript_sliced_in(client, monkeypatch):
-    _corpus(monkeypatch, alignment=_alignment())
+    _corpus(monkeypatch, alignments=[_alignment()])
 
     response = client.get("/speeches/sp1/subtitles.vtt")
 
@@ -92,7 +110,7 @@ def test_track_is_webvtt_with_the_transcript_sliced_in(client, monkeypatch):
 
 
 def test_track_is_cacheable(client, monkeypatch):
-    _corpus(monkeypatch, alignment=_alignment())
+    _corpus(monkeypatch, alignments=[_alignment()])
 
     response = client.get("/speeches/sp1/subtitles.vtt")
 
@@ -101,7 +119,7 @@ def test_track_is_cacheable(client, monkeypatch):
 
 def test_track_by_congress_intervention_id(client, monkeypatch):
     # The public URLs are keyed on the video id, so that is what a player asks for.
-    _corpus(monkeypatch, alignment=_alignment())
+    _corpus(monkeypatch, alignments=[_alignment()])
 
     assert client.get("/speeches/726567/subtitles.vtt").status_code == 200
 
@@ -113,7 +131,7 @@ def test_track_of_an_unaligned_speech_is_404(client, monkeypatch):
 
 
 def test_track_of_an_unknown_speech_is_404(client, monkeypatch):
-    _corpus(monkeypatch, alignment=_alignment())
+    _corpus(monkeypatch, alignments=[_alignment()])
 
     assert client.get("/speeches/nope/subtitles.vtt").status_code == 404
 
@@ -122,35 +140,100 @@ def test_track_is_withheld_when_the_transcript_has_changed(client, monkeypatch):
     # Offsets into a re-cleaned transcript are not stale but wrong — they would
     # caption one sentence with another. No subtitles is the safe answer.
     _corpus(monkeypatch, speech=_speech(text="Otro texto distinto por completo."),
-            alignment=_alignment())
+            alignments=[_alignment()])
 
     assert client.get("/speeches/sp1/subtitles.vtt").status_code == 404
 
 
 def test_subtitles_route_does_not_shadow_the_speech_itself(client, monkeypatch):
-    _corpus(monkeypatch, alignment=_alignment())
+    _corpus(monkeypatch, alignments=[_alignment()])
 
     assert client.get("/speeches/sp1").json()["id"] == "sp1"
 
 
+# ---- choosing the language ---------------------------------------------------------
+
+def test_each_language_serves_its_own_track(client, monkeypatch):
+    _corpus(monkeypatch, speech=_bilingual(), alignments=[
+        _alignment(text=GALEGO, lang="gl"),
+        _alignment(text=TEXT, lang="es", block_index=1, original=False)])
+
+    galician = client.get("/speeches/sp1/subtitles.vtt?lang=gl")
+    spanish = client.get("/speeches/sp1/subtitles.vtt?lang=es")
+
+    assert "Grazas, presidente." in galician.text
+    assert "Muchas gracias, presidente." in spanish.text
+
+
+def test_no_language_serves_the_as_delivered_track(client, monkeypatch):
+    """What keeps a client that predates the second track working: it asks the way it
+    always did and gets the language the speech was given in."""
+    _corpus(monkeypatch, speech=_bilingual(), alignments=[
+        _alignment(text=GALEGO, lang="gl"),
+        _alignment(text=TEXT, lang="es", block_index=1, original=False)])
+
+    response = client.get("/speeches/sp1/subtitles.vtt")
+
+    assert "Grazas, presidente." in response.text
+
+
+def test_a_language_the_speech_has_no_track_for_is_404(client, monkeypatch):
+    _corpus(monkeypatch, alignments=[_alignment()])
+
+    assert client.get("/speeches/sp1/subtitles.vtt?lang=eu").status_code == 404
+
+
+def test_a_malformed_language_is_rejected(client, monkeypatch):
+    # Nothing we could have issued, and it never reaches a collection lookup.
+    # 400 rather than FastAPI's 422: the app maps validation errors itself.
+    _corpus(monkeypatch, alignments=[_alignment()])
+
+    assert client.get("/speeches/sp1/subtitles.vtt?lang=../etc").status_code == 400
+
+
 # ---- the detail payload's indicator ------------------------------------------------
 
-def test_detail_says_which_language_the_track_is_in(client, monkeypatch):
-    _corpus(monkeypatch, speech=_speech(lang="gl"),
-            alignment=_alignment(lang="gl"))
+def test_detail_lists_the_track_and_its_language(client, monkeypatch):
+    _corpus(monkeypatch, speech=_speech(text=GALEGO, lang="gl"),
+            alignments=[_alignment(text=GALEGO, lang="gl")])
 
-    assert client.get("/speeches/sp1").json()["subtitles"] == {"lang": "gl"}
+    assert client.get("/speeches/sp1").json()["subtitles"] == [
+        {"lang": "gl", "original": True}]
 
 
-def test_detail_omits_subtitles_when_there_are_none(client, monkeypatch):
+def test_detail_lists_both_tracks_of_a_co_official_speech(client, monkeypatch):
+    """And says which is the translation, so the page can label it rather than
+    presenting a derived track as if it were the words spoken."""
+    _corpus(monkeypatch, speech=_bilingual(), alignments=[
+        _alignment(text=GALEGO, lang="gl"),
+        _alignment(text=TEXT, lang="es", block_index=1, original=False)])
+
+    assert client.get("/speeches/sp1").json()["subtitles"] == [
+        {"lang": "gl", "original": True},
+        {"lang": "es", "original": False},
+    ]
+
+
+def test_detail_reports_no_tracks_when_there_are_none(client, monkeypatch):
     _corpus(monkeypatch)
 
-    assert "subtitles" not in client.get("/speeches/sp1").json()
+    assert client.get("/speeches/sp1").json()["subtitles"] == []
 
 
-def test_detail_omits_subtitles_the_track_would_refuse_to_serve(client, monkeypatch):
+def test_detail_omits_a_track_it_would_refuse_to_serve(client, monkeypatch):
     # The page must never advertise a track that 404s on request.
     _corpus(monkeypatch, speech=_speech(text="Otro texto distinto por completo."),
-            alignment=_alignment())
+            alignments=[_alignment()])
 
-    assert "subtitles" not in client.get("/speeches/sp1").json()
+    assert client.get("/speeches/sp1").json()["subtitles"] == []
+
+
+def test_a_stale_track_does_not_hide_its_healthy_sibling(client, monkeypatch):
+    """One block re-cleaned since it was aligned must cost only its own track."""
+    _corpus(monkeypatch, speech=_bilingual(original="Outro texto por completo."),
+            alignments=[
+                _alignment(text=GALEGO, lang="gl"),
+                _alignment(text=TEXT, lang="es", block_index=1, original=False)])
+
+    assert client.get("/speeches/sp1").json()["subtitles"] == [
+        {"lang": "es", "original": False}]

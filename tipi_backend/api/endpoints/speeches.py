@@ -41,21 +41,32 @@ _SUBTITLES_CACHE = "public, max-age=3600"
 
 
 @router.get("/{id}/subtitles.vtt")
-def get_speech_subtitles(id: str):
+def get_speech_subtitles(
+    id: str,
+    lang: Annotated[str | None, Query(
+        min_length=2, max_length=8, pattern=r"^[A-Za-z-]+$",
+        description="Which language's track. Omitted means the as-delivered one, "
+                    "which is the only track a monolingual speech has.")] = None,
+):
     """The WebVTT subtitle track of one speech, for a player's ``<track>``.
 
     The cues are timed against the intervention's own video by forced alignment of
     the Diario de Sesiones transcript, so the words are the stenographers' and only
     the timing is a model's. Rendered per request from the stored cue offsets, never
     from a file: subtitles are a projection of the transcript and cannot drift from
-    it. 404 covers all three ways there can be no track — unknown speech, never
-    aligned, or aligned against a transcript that has since changed — because a
-    player treats them all the same way.
+    it. 404 covers every way there can be no track — unknown speech, never aligned,
+    no track in the language asked for, or aligned against a transcript that has since
+    changed — because a player treats them all the same way.
+
+    A co-official-language intervention has two tracks, the language it was delivered
+    in and Spanish, which is why the language is a parameter. It is optional so a
+    client that predates the second track keeps working unchanged; HTTP caches key on
+    the query string, so the two tracks cache independently without extra headers.
 
     Two path segments after ``/speeches`` so it never shadows ``/speeches/{id}``.
     """
     try:
-        track = speech_subtitles(id)
+        track = speech_subtitles(id, lang)
     except Exception as e:
         log.error(e)
         track = None

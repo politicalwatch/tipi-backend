@@ -308,43 +308,71 @@ def _resolve_speech(id):
 def get_speech(id):
     speech = _resolve_speech(id)
     out = SpeechExtendedSchema.model_validate(speech)
-    out.subtitles = _subtitle_track_of(speech)
+    out.subtitles = _subtitle_tracks_of(speech)
     return out
 
 
-def _subtitle_track_of(speech):
-    """The subtitle track a page may load for this speech, or ``None``.
+def _speech_langs(speech):
+    """The languages this speech could have a track in, in document order.
 
-    Read through the same drift guard the track itself is served through, so the
-    page never advertises subtitles that would 404 on request: cues carry offsets
-    rather than text, and offsets into a transcript that has since been re-cleaned
-    would caption one sentence with another.
+    Taken from the speech itself rather than searched for in the alignments: that is
+    what lets every read of that collection stay a lookup by ``_id`` and keeps it
+    without an index of its own.
     """
-    summary = SpeechAlignments.summary(speech.id)
-    if summary is None:
-        return None
-    text = aligned_text(speech.speech, summary.get("block_index"),
-                        summary.get("lang"), summary.get("text_sha256"),
-                        summary.get("text_length"))
-    if text is None:
-        log.warning(f"{speech.id} has an alignment made against different text")
-        return None
-    return SubtitleTrackOut(lang=summary.get("lang"))
+    return [block.lang for block in speech.speech or [] if block.lang]
 
 
-def speech_subtitles(id):
-    """The WebVTT track of one speech, or ``None`` if it has no usable one.
+def _subtitle_tracks_of(speech):
+    """The subtitle tracks a page may load for this speech.
+
+    One per language, since a co-official-language intervention is subtitled both in
+    the language it was delivered in and in Spanish. Each is read through the same
+    drift guard the track itself is served through, so the page never advertises
+    subtitles that would 404 on request: cues carry offsets rather than text, and
+    offsets into a transcript that has since been re-cleaned would caption one
+    sentence with another.
+    """
+    tracks = []
+    for summary in SpeechAlignments.summaries(speech.id, _speech_langs(speech)):
+        text = aligned_text(speech.speech, summary.get("block_index"),
+                            summary.get("lang"), summary.get("text_sha256"),
+                            summary.get("text_length"))
+        if text is None:
+            log.warning(f"{speech.id} has a {summary.get('lang')} alignment made "
+                        "against different text")
+            continue
+        tracks.append(SubtitleTrackOut(lang=summary.get("lang"),
+                                       original=bool(summary.get("original", True))))
+    return tracks
+
+
+def speech_subtitles(id, lang=None):
+    """The WebVTT track of one speech in one language, or ``None`` if there is none.
+
+    ``lang`` omitted means the as-delivered track — the only one a monolingual speech
+    has, and the safe answer for a client that predates the second one, so a request
+    without a language can never start failing.
 
     Rendered here rather than stored: the track is a projection of the stored cue
     numbers over the stored transcript, so a correction to the text reaches the
     subtitles with no re-alignment and the two can never disagree.
     """
     speech = _resolve_speech(id)
+    wanted = lang or _as_delivered_lang(speech)
+    if wanted is None:
+        return None
     try:
-        alignment = SpeechAlignments.get(speech.id)
+        alignment = SpeechAlignments.get(speech.id, wanted)
     except DoesNotExist:
         return None
     return subtitle_track(alignment, speech.speech)
+
+
+def _as_delivered_lang(speech):
+    """The language of the block the Diario marks as spoken, or the first one."""
+    blocks = speech.speech or []
+    return next((b.lang for b in blocks if b.original),
+                blocks[0].lang if blocks else None)
 
 
 """ SEMANTIC SEARCH METHODS """

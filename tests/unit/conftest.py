@@ -12,11 +12,15 @@ class _NoAlignments:
     """A corpus in which nothing has been aligned — what almost every speech is."""
 
     @staticmethod
-    def summary(id):
+    def summary(id, lang):
         return None
 
     @staticmethod
-    def get(id):
+    def summaries(id, langs):
+        return []
+
+    @staticmethod
+    def get(id, lang):
         raise DoesNotExist(id)
 
 
