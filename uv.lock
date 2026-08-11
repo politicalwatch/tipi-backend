@@ -2531,7 +2531,7 @@ wheels = [
 [[package]]
 name = "qhld-ai"
 version = "0.1.0"
-source = { git = "https://github.com/politicalwatch/qhld-ai.git?branch=feat%2Fparliamentary-speech-analysis#33dcefa374cce56f597592464901bf049f13fbad" }
+source = { git = "https://github.com/politicalwatch/qhld-ai.git?branch=feat%2Fparliamentary-speech-analysis#65001e3033322d74f077f90630de9ab8bafdcec3" }
 dependencies = [
     { name = "httpx" },
     { name = "langchain-core" },
@@ -2614,7 +2614,7 @@ dev = [
 [[package]]
 name = "qhld-data"
 version = "2.0.1"
-source = { git = "https://github.com/politicalwatch/qhld-data.git?branch=feat%2Fparliamentary-speech-analysis#064c73b9b85271378a5578fca0086bb3d1043d49" }
+source = { git = "https://github.com/politicalwatch/qhld-data.git?branch=feat%2Fparliamentary-speech-analysis#69401a3b46c41e7df2c94ef4ce00b6b5740c7614" }
 dependencies = [
     { name = "pydantic" },
     { name = "pymongo" },
