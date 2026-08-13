@@ -43,7 +43,7 @@ def _bilingual(original=GALEGO, translation=TEXT):
 def _alignment(text=TEXT, lang="es", block_index=0, original=True):
     digest, length = text_fingerprint(text)
     return SpeechAlignment(
-        _id=track_id("sp1", lang), speech_id="sp1", lang=lang,
+        _id=track_id("sp1", lang, original), speech_id="sp1", lang=lang,
         block_index=block_index, original=original,
         cues=[Cue(start_ms=3420, end_ms=7180, char_start=0, char_end=27),
               Cue(start_ms=7180, end_ms=11000, char_start=28, char_end=54)],
@@ -68,25 +68,27 @@ class _FakeSpeeches:
 
 
 class _FakeAlignments:
-    """Stands in for the collection, keyed the way the real one is."""
+    """Stands in for the collection, keyed the way the real one is — by language AND
+    role, because two blocks of one speech can be the same language."""
 
     def __init__(self, alignments=()):
-        self.by_lang = {a.lang: a for a in alignments}
+        self.by_block = {(a.lang, bool(a.original)): a for a in alignments}
 
-    def summary(self, id, lang):
-        alignment = self.by_lang.get(lang)
+    def summary(self, id, lang, original=True):
+        alignment = self.by_block.get((lang, original))
         if alignment is None:
             return None
         return {k: v for k, v in alignment.to_bson().items() if k != "cues"}
 
-    def summaries(self, id, langs):
-        return [s for s in (self.summary(id, lang) for lang in langs)
+    def summaries(self, id, blocks):
+        return [s for s in (self.summary(id, lang, original)
+                            for lang, original in blocks)
                 if s is not None]
 
-    def get(self, id, lang):
-        if lang not in self.by_lang:
+    def get(self, id, lang, original=True):
+        if (lang, original) not in self.by_block:
             raise DoesNotExist(id)
-        return self.by_lang[lang]
+        return self.by_block[(lang, original)]
 
 
 def _corpus(monkeypatch, speech=None, alignments=()):
@@ -163,6 +165,60 @@ def test_each_language_serves_its_own_track(client, monkeypatch):
 
     assert "Grazas, presidente." in galician.text
     assert "Muchas gracias, presidente." in spanish.text
+
+
+BASQUE_MIX = "Buenas tardes. Eskerrik asko, presidenta. Hemen gaude gaur."
+RENDERED_MIX = "Buenas tardes. Muchas gracias, presidenta. Hoy estamos aquí."
+
+
+def _two_spanish_blocks():
+    """A speech given mostly in Spanish whose co-official passage the Diario also
+    printed in Spanish: both blocks are ``es``, and only the role separates them."""
+    return _speech(blocks=[
+        {"lang": "es", "text": BASQUE_MIX, "original": True, "langs": ["es", "eu"]},
+        {"lang": "es", "text": RENDERED_MIX, "original": False, "langs": ["es"]},
+    ])
+
+
+def test_two_spanish_blocks_serve_two_different_tracks(client, monkeypatch):
+    """The language cannot tell these apart, so the role does. Without it the second
+    track would answer for the first and the page would caption a speech with its own
+    translation."""
+    _corpus(monkeypatch, speech=_two_spanish_blocks(), alignments=[
+        _alignment(text=BASQUE_MIX, lang="es"),
+        _alignment(text=RENDERED_MIX, lang="es", block_index=1, original=False)])
+
+    delivered = client.get("/speeches/sp1/subtitles.vtt?lang=es&original=true")
+    rendered = client.get("/speeches/sp1/subtitles.vtt?lang=es&original=false")
+
+    # Sliced at the fixture's cue offsets, so each is checked on the words that fall
+    # inside a cue rather than on the whole sentence.
+    assert "Eskerrik" in delivered.text and "Hemen gaude" in delivered.text
+    assert "Muchas graci" in rendered.text and "Eskerrik" not in rendered.text
+
+
+def test_two_spanish_blocks_are_both_advertised(client, monkeypatch):
+    _corpus(monkeypatch, speech=_two_spanish_blocks(), alignments=[
+        _alignment(text=BASQUE_MIX, lang="es"),
+        _alignment(text=RENDERED_MIX, lang="es", block_index=1, original=False)])
+
+    tracks = client.get("/speeches/sp1").json()["subtitles"]
+
+    assert [(t["lang"], t["original"]) for t in tracks] == [("es", True), ("es", False)]
+
+
+def test_asking_without_a_role_serves_the_block_the_language_names(client, monkeypatch):
+    """A client that predates the flag asks ``?lang=es`` and must keep getting what it
+    always got — on a co-official speech that is the TRANSLATION, since the Spanish
+    block is the one being asked for."""
+    _corpus(monkeypatch, speech=_bilingual(), alignments=[
+        _alignment(text=GALEGO, lang="gl"),
+        _alignment(text=TEXT, lang="es", block_index=1, original=False)])
+
+    response = client.get("/speeches/sp1/subtitles.vtt?lang=es")
+
+    assert response.status_code == 200
+    assert "Muchas gracias, presidente." in response.text
 
 
 def test_no_language_serves_the_as_delivered_track(client, monkeypatch):

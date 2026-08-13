@@ -312,20 +312,26 @@ def get_speech(id):
     return out
 
 
-def _speech_langs(speech):
-    """The languages this speech could have a track in, in document order.
+def _speech_blocks(speech):
+    """The blocks this speech could have a track for, in document order, as
+    ``(lang, original)``.
 
     Taken from the speech itself rather than searched for in the alignments: that is
     what lets every read of that collection stay a lookup by ``_id`` and keeps it
     without an index of its own.
+
+    The role travels with the language because the language alone does not name a
+    block: a speech given mostly in Spanish, one passage of which the Diario also
+    printed in Spanish, has two blocks that are both ``es``.
     """
-    return [block.lang for block in speech.speech or [] if block.lang]
+    return [(block.lang, bool(block.original))
+            for block in speech.speech or [] if block.lang]
 
 
 def _subtitle_tracks_of(speech):
     """The subtitle tracks a page may load for this speech.
 
-    One per language, since a co-official-language intervention is subtitled both in
+    One per block, since a co-official-language intervention is subtitled both in
     the language it was delivered in and in Spanish. Each is read through the same
     drift guard the track itself is served through, so the page never advertises
     subtitles that would 404 on request: cues carry offsets rather than text, and
@@ -333,7 +339,7 @@ def _subtitle_tracks_of(speech):
     sentence with another.
     """
     tracks = []
-    for summary in SpeechAlignments.summaries(speech.id, _speech_langs(speech)):
+    for summary in SpeechAlignments.summaries(speech.id, _speech_blocks(speech)):
         text = aligned_text(speech.speech, summary.get("block_index"),
                             summary.get("lang"), summary.get("text_sha256"),
                             summary.get("text_length"))
@@ -346,12 +352,18 @@ def _subtitle_tracks_of(speech):
     return tracks
 
 
-def speech_subtitles(id, lang=None):
-    """The WebVTT track of one speech in one language, or ``None`` if there is none.
+def speech_subtitles(id, lang=None, original=None):
+    """The WebVTT track of one block of a speech, or ``None`` if there is none.
 
     ``lang`` omitted means the as-delivered track — the only one a monolingual speech
     has, and the safe answer for a client that predates the second one, so a request
     without a language can never start failing.
+
+    ``original`` names which of two blocks of the SAME language is wanted, and only a
+    speech that has two needs to say. Omitted, the speech itself answers it: the first
+    block in the language asked for. That is what keeps ``?lang=es`` meaning what it has
+    always meant on a co-official intervention, where the Spanish block is the
+    *translation* — defaulting the flag to ``True`` instead would 404 every one of them.
 
     Rendered here rather than stored: the track is a projection of the stored cue
     numbers over the stored transcript, so a correction to the text reaches the
@@ -361,8 +373,11 @@ def speech_subtitles(id, lang=None):
     wanted = lang or _as_delivered_lang(speech)
     if wanted is None:
         return None
+    if original is None:
+        original = next((bool(block.original) for block in speech.speech or []
+                         if block.lang == wanted), True)
     try:
-        alignment = SpeechAlignments.get(speech.id, wanted)
+        alignment = SpeechAlignments.get(speech.id, wanted, original)
     except DoesNotExist:
         return None
     return subtitle_track(alignment, speech.speech)

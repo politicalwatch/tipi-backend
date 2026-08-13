@@ -47,6 +47,10 @@ def get_speech_subtitles(
         min_length=2, max_length=8, pattern=r"^[A-Za-z-]+$",
         description="Which language's track. Omitted means the as-delivered one, "
                     "which is the only track a monolingual speech has.")] = None,
+    original: Annotated[bool | None, Query(
+        description="Which of two blocks of the SAME language is wanted: the one that "
+                    "was delivered, or the Diario's rendering of a passage of it. "
+                    "Omitted means the as-delivered one.")] = None,
 ):
     """The WebVTT subtitle track of one speech, for a player's ``<track>``.
 
@@ -63,10 +67,15 @@ def get_speech_subtitles(
     client that predates the second track keeps working unchanged; HTTP caches key on
     the query string, so the two tracks cache independently without extra headers.
 
+    The language does not always separate them: a speech given mostly in Spanish, one
+    passage of which the Diario also printed in Spanish, has two Spanish blocks and
+    they differ only in what they are — hence ``original``, which is likewise optional
+    and likewise defaults to what was said.
+
     Two path segments after ``/speeches`` so it never shadows ``/speeches/{id}``.
     """
     try:
-        track = speech_subtitles(id, lang)
+        track = speech_subtitles(id, lang, original)
     except Exception as e:
         log.error(e)
         track = None
