@@ -26,7 +26,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse
 
-from qhld_ai.domain.errors import NotASpeechQuery
+from qhld_ai.domain.errors import SearchRefused
 from tipi_data import DoesNotExist
 from tipi_backend.api.business import semantic_search_speeches, speech_passages
 from tipi_backend.api.ratelimit import limiter
@@ -86,12 +86,16 @@ def search_speeches_semantic(
     """
     try:
         meta, results = semantic_search_speeches(query.model_dump())
-    except NotASpeechQuery:
-        # The input wasn't a speech search (a command, a question to the
-        # assistant, an injection). A deterministic client error, not a service
-        # outage — 422, so the frontend can tell it apart from the 503 below.
+    except SearchRefused as refusal:
+        # The search was refused before retrieval — either the input wasn't a
+        # speech search (a command, a question to the assistant, an injection) or
+        # it was written in a language we don't serve. A deterministic client
+        # error, not a service outage: 422, so the frontend can tell it apart from
+        # the 503 below, and `reason` so it can say WHICH — the two need different
+        # words, since a refused-for-language user did nothing wrong.
         return JSONResponse(
-            status_code=422, content={"Error": "Not a speech search"}
+            status_code=422,
+            content={"Error": "Search refused", "reason": refusal.reason},
         )
     except Exception as e:
         log.error(e)
@@ -129,9 +133,10 @@ def speech_passages_for_query(
         return JSONResponse(
             status_code=404, content={"Error": "Speech not found"}
         )
-    except NotASpeechQuery:
+    except SearchRefused as refusal:
         return JSONResponse(
-            status_code=422, content={"Error": "Not a speech search"}
+            status_code=422,
+            content={"Error": "Search refused", "reason": refusal.reason},
         )
     except Exception as e:
         log.error(e)
