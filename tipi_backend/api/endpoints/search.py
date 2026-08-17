@@ -65,6 +65,21 @@ _SEARCH_LIMITS = "10/minute;60/hour;200/day"
 # the frontend caches per (speech, query) for the session, so revisits are free.
 _PASSAGE_LIMITS = "30/minute;150/hour;500/day"
 
+# Refusal reasons the client is allowed to see. Anything else is reported as the
+# intent gate's, which is true — a hostile query is not a speech search — and is
+# the same wording the user would have got before the hostile class existed.
+#
+# Deliberate: `prompt_injection` is the one reason that can get an address banned
+# on a single request, so echoing it back would tell an attacker exactly which
+# phrasings trip the classifier and which slip past it. That is free feedback for
+# evading it, paid for with nothing, and the honest user loses nothing by the
+# masking because both refusals need the same words anyway.
+_CLIENT_REASONS = frozenset({"not_a_speech_search", "unsupported_language"})
+
+
+def _client_reason(refusal):
+    return refusal.reason if refusal.reason in _CLIENT_REASONS else "not_a_speech_search"
+
 
 @router.get("/search")
 @limiter.shared_limit(_SPEND_CEILING, scope="speech-search", key_func=lambda: "all")
@@ -110,7 +125,7 @@ def search_speeches_semantic(
         bans.record_refusal(request, refusal.reason)
         return JSONResponse(
             status_code=422,
-            content={"Error": "Search refused", "reason": refusal.reason},
+            content={"Error": "Search refused", "reason": _client_reason(refusal)},
         )
     except Exception as e:
         log.error(e)
@@ -154,7 +169,7 @@ def speech_passages_for_query(
     except SearchRefused as refusal:
         return JSONResponse(
             status_code=422,
-            content={"Error": "Search refused", "reason": refusal.reason},
+            content={"Error": "Search refused", "reason": _client_reason(refusal)},
         )
     except Exception as e:
         log.error(e)

@@ -73,19 +73,34 @@ class Settings(BaseSettings):
     # Its own database, so flushing the response cache can never clear the bans and
     # a ban key can never collide with a cache key.
     ban_redis_db: int = 9
-    # ``window seconds: (refusals allowed, ban seconds)``. The longest ban among the
-    # tiers crossed is the one applied.
+    # ``refusal reason -> {window seconds: (refusals allowed, ban seconds)}``. The
+    # longest ban among the tiers crossed is the one applied.
     #
-    # Both windows are DAYS or longer on purpose. What is counted is "the parser said
-    # this was not a search", which catches a newcomer typing "hola" or "¿quién eres?"
-    # as readily as anything hostile, so the thresholds have to sit above what a person
+    # Two reasons, two shapes, because they are different populations.
+    #
+    # ``not_a_speech_search`` is "the parser said this was not a search", which catches
+    # a newcomer typing "hola" or "¿quién eres?" as readily as anyone abusing us. So
+    # its windows are DAYS or longer and its thresholds sit above what a person
     # exploring the search box produces. An hourly tier was drafted and dropped: the
     # rate limiter already caps one address at 60/hour, so it added little against
-    # someone patient while carrying almost all of the risk of catching a real user.
-    # These target persistence over days, which is the thing the limiter cannot see.
-    ban_tiers: dict[int, tuple[int, int]] = {
-        86400: (15, 21600),      # 15 in a day       -> 6 hours
-        604800: (40, 604800),    # 40 in a week      -> 7 days
+    # someone patient while carrying almost all the risk of catching a real user.
+    # These target persistence over days, which is what the limiter cannot see.
+    #
+    # ``prompt_injection`` is the unambiguously hostile subset, measured 2026-08-17 at
+    # zero false positives over 35 legitimate and 10 non-search probes. One occurrence
+    # is enough to act on, so it bans immediately — briefly at first, because the
+    # measurement is 20 probes rather than real traffic, and escalating steeply for
+    # anyone who comes back.
+    ban_tiers: dict[str, dict[int, tuple[int, int]]] = {
+        "not_a_speech_search": {
+            86400: (15, 21600),      # 15 in a day     -> 6 hours
+            604800: (40, 604800),    # 40 in a week    -> 7 days
+        },
+        "prompt_injection": {
+            3600: (1, 900),          # 1 in an hour    -> 15 minutes
+            86400: (3, 86400),       # 3 in a day      -> 24 hours
+            604800: (10, 2592000),   # 10 in a week    -> 30 days
+        },
     }
 
 

@@ -8,21 +8,23 @@ produces and stops serving an address that keeps producing them.
 Three things about the shape, each of which is a decision rather than an implementation
 detail:
 
-**What is counted is "not a search", NOT "an attack".** The intent gate's verdict covers
-four things — an instruction to the system, a request to generate content, **a question
-addressed to the assistant**, and an attempt to change its behaviour — and only the last
-is hostile. Someone typing "hola" or "¿quién eres?" while working out what the box does
-lands in exactly the same bucket as someone trying to extract the prompt. Nothing here
-can tell them apart, so the tiers are set to what a curious newcomer must not exhaust
-rather than to what an attacker is allowed, and they measure persistence over days
-rather than bursts. This is the single strongest reason the module ships in shadow.
+**Two populations, two tables.** ``not_a_speech_search`` means the parser judged the
+input not to be a search, which catches someone typing "hola" or "¿quién eres?" while
+working out what the box does as readily as anyone abusing us. Its tiers are therefore
+set to what a curious newcomer must not exhaust, and they measure persistence over days
+rather than bursts. ``prompt_injection`` is the unambiguously hostile subset — an
+attempt to override instructions, extract the prompt, bypass a filter or adopt an
+unrestricted persona — and one occurrence is enough to act on.
 
-The planned successor is a separate refusal class for the unambiguously hostile case,
-banned instantly and briefly on its own escalating table, leaving this counter for the
-merely-not-a-search. The two compose in the right direction: an attack that classifier
-misses still lands here and still accumulates, so it needs precision rather than recall.
-Nothing here has to change to record it — the outcome is derived from the refusal's own
-reason, so a new class files itself.
+Counters are keyed per reason so the two never pool: fifteen confused non-searches must
+not combine with one hostile query into a ban neither of them earned.
+
+**The classes compose, which is what makes the hostile table safe.** An attack the
+classifier does not recognise still fails the intent gate, still gets refused, and still
+accumulates on the soft counter. So the hostile class is tuned for precision and its
+recall gaps cost little — measured 2026-08-17 at 0 false positives over 35 legitimate
+and 10 non-search probes, with 19 of 20 attacks recognised and the twentieth refused as
+a plain non-search.
 
 ``refused_unsupported_language`` is excluded for a related but weaker reason: it is
 someone asking a real question in a language we do not serve, they did nothing wrong,
@@ -67,13 +69,6 @@ _client = redis.Redis(
 OFF = "off"
 SHADOW = "shadow"
 ENFORCE = "enforce"
-
-# The one refusal reason that counts toward a ban. The name is the gate's own, and it is
-# the honest one: this is "the parser said it was not a search", which is a broader class
-# than abuse (see the module docstring). Taken from the same reason string the recording
-# half files under, so the two halves cannot drift apart on what is being counted.
-COUNTED_REASON = "not_a_speech_search"
-
 
 def _key(prefix, client):
     return f"ban:{prefix}:{client}"
@@ -129,17 +124,18 @@ def record_refusal(request, reason):
     Returns the ban duration decided, or 0. The return value is what shadow mode
     reports; in enforce mode the ban is already in place by then.
     """
-    if _settings.search_ban_mode == OFF or reason != COUNTED_REASON:
+    tiers = _settings.ban_tiers.get(reason)
+    if _settings.search_ban_mode == OFF or not tiers:
         return 0
     client = client_address(request)
     try:
-        return _decide(client)
+        return _decide(client, reason, tiers)
     except Exception:
         log.exception("Could not record a refusal against %s; no ban decided", client)
         return 0
 
 
-def _decide(client):
+def _decide(client, reason, tiers):
     """Increment every window's counter, then apply the longest tier crossed.
 
     One counter per window rather than one timestamp list per address: a list would grow
@@ -149,11 +145,13 @@ def _decide(client):
     The windows are fixed rather than sliding — a counter starts at the first refusal
     and dies one window later. That makes an address at the boundary marginally harder
     to ban than a truly sliding window would, which is the direction to err in.
+
+    Counters are keyed per REASON, so the two populations never pool: fifteen confused
+    non-searches must not combine with one hostile query into a ban neither earned.
     """
-    tiers = _settings.ban_tiers
     pipe = _client.pipeline()
     for window in tiers:
-        key = _key(f"count:{window}", client)
+        key = _key(f"count:{reason}:{window}", client)
         pipe.incr(key)
         # Only the first refusal in a window sets the expiry; NX keeps a later one from
         # pushing the window forward, which would let a steady prober outrun it forever.
@@ -166,19 +164,33 @@ def _decide(client):
                if counts[window] >= allowed]
     if not crossed:
         return 0
-    # Longest ban wins: an actor who crosses the weekly tier has also crossed the hourly
-    # one, and the hourly answer is not the interesting one.
+    # Longest ban wins: an actor who crosses the weekly tier has also crossed the daily
+    # one, and the daily answer is not the interesting one.
     ban, window, count, allowed = max(crossed)
 
     if enforcing():
-        _client.setex(_key("until", client), ban, count)
-        log.warning("Banned %s for %ss: %s intent-gate refusals in %ss (limit %s)",
-                    client, ban, count, window, allowed)
+        _apply(client, ban, count)
+        log.warning("Banned %s for %ss: %s %s refusals in %ss (limit %s)",
+                    client, ban, count, reason, window, allowed)
     else:
-        log.warning("WOULD ban %s for %ss: %s intent-gate refusals in %ss (limit %s) "
-                    "[mode=%s]", client, ban, count, window, allowed,
+        log.warning("WOULD ban %s for %ss: %s %s refusals in %ss (limit %s) [mode=%s]",
+                    client, ban, count, reason, window, allowed,
                     _settings.search_ban_mode)
     return ban
+
+
+def _apply(client, ban, count):
+    """Store the ban, never shortening one already in force.
+
+    Both reasons write the same key, so a plain ``setex`` would let an actor serving a
+    thirty-day hostile ban clear it by tripping the soft gate once — the cheaper offence
+    overwriting the dearer one. Taking the longer of the two is the whole rule.
+    """
+    key = _key("until", client)
+    remaining = _client.ttl(key)
+    if remaining and remaining > ban:
+        return
+    _client.setex(key, ban, count)
 
 
 def ban_response(seconds):

@@ -78,13 +78,20 @@ def store(monkeypatch):
     return fake
 
 
+SOFT = "not_a_speech_search"
+HOSTILE = "prompt_injection"
+
+
 def _configure(monkeypatch, mode="enforce", forwarded="10.0.0.1", tiers=None):
     monkeypatch.setattr(bans, "_settings", SimpleNamespace(
         search_ban_mode=mode,
         forwarded_allow_ips=forwarded,
         cache_redis_host="redis", cache_redis_port=6379,
         cache_redis_password="", ban_redis_db=9,
-        ban_tiers=tiers or {3600: (5, 900), 86400: (15, 21600)},
+        ban_tiers=tiers or {
+            SOFT: {3600: (5, 900), 86400: (15, 21600)},
+            HOSTILE: {3600: (1, 900), 86400: (3, 86400)},
+        },
     ))
 
 
@@ -94,20 +101,20 @@ def test_a_tier_bans_only_once_it_is_crossed(monkeypatch, store):
 
     # Four refusals sit under the hourly allowance of five.
     for _ in range(4):
-        assert bans.record_refusal(request, "not_a_speech_search") == 0
+        assert bans.record_refusal(request, SOFT) == 0
     assert bans.banned_for(request) == 0
 
-    assert bans.record_refusal(request, "not_a_speech_search") == 900
+    assert bans.record_refusal(request, SOFT) == 900
     assert bans.banned_for(request) == 900
 
 
 def test_the_longest_tier_crossed_is_the_one_applied(monkeypatch, store):
     # An actor over the daily allowance is necessarily over the hourly one too, and the
     # hourly answer is not the interesting one.
-    _configure(monkeypatch, tiers={3600: (5, 900), 86400: (8, 21600)})
+    _configure(monkeypatch, tiers={SOFT: {3600: (5, 900), 86400: (8, 21600)}})
     request = _request()
 
-    bans_decided = [bans.record_refusal(request, "not_a_speech_search")
+    bans_decided = [bans.record_refusal(request, SOFT)
                     for _ in range(8)]
 
     assert bans_decided[4] == 900       # hourly tier first
@@ -132,7 +139,7 @@ def test_addresses_are_counted_apart(monkeypatch, store):
     _configure(monkeypatch)
 
     for _ in range(5):
-        bans.record_refusal(_request("203.0.113.7"), "not_a_speech_search")
+        bans.record_refusal(_request("203.0.113.7"), SOFT)
 
     assert bans.banned_for(_request("203.0.113.7")) == 900
     assert bans.banned_for(_request("198.51.100.4")) == 0
@@ -142,7 +149,7 @@ def test_shadow_mode_decides_but_does_not_ban(monkeypatch, store, caplog):
     _configure(monkeypatch, mode="shadow")
     request = _request()
 
-    decided = [bans.record_refusal(request, "not_a_speech_search") for _ in range(5)]
+    decided = [bans.record_refusal(request, SOFT) for _ in range(5)]
 
     # The verdict is real — that is what makes the logs worth reading — but nothing is
     # stored, so the next request is served.
@@ -161,7 +168,7 @@ def test_enforcement_refuses_while_the_address_is_caller_controlled(monkeypatch,
     request = _request()
 
     for _ in range(5):
-        bans.record_refusal(request, "not_a_speech_search")
+        bans.record_refusal(request, SOFT)
 
     assert bans.enforcing() is False
     assert bans.banned_for(request) == 0
@@ -172,7 +179,7 @@ def test_off_records_nothing_at_all(monkeypatch, store):
     _configure(monkeypatch, mode="off")
     request = _request()
 
-    assert bans.record_refusal(request, "not_a_speech_search") == 0
+    assert bans.record_refusal(request, SOFT) == 0
     assert bans.banned_for(request) == 0
     assert store.counts == {}
 
@@ -183,7 +190,7 @@ def test_a_broken_store_serves_the_request(monkeypatch):
     request = _request()
 
     # Bookkeeping being down must not ban anyone, and must not turn a search into a 500.
-    assert bans.record_refusal(request, "not_a_speech_search") == 0
+    assert bans.record_refusal(request, SOFT) == 0
     assert bans.banned_for(request) == 0
     assert bans.reject_if_banned(request) is None
 
@@ -192,7 +199,7 @@ def test_the_ban_response_carries_a_usable_retry_after(monkeypatch, store):
     _configure(monkeypatch)
     request = _request()
     for _ in range(5):
-        bans.record_refusal(request, "not_a_speech_search")
+        bans.record_refusal(request, SOFT)
 
     response = bans.reject_if_banned(request)
 
@@ -206,9 +213,76 @@ def test_a_window_expiry_is_not_pushed_forward_by_later_refusals(monkeypatch, st
     request = _request()
 
     for _ in range(3):
-        bans.record_refusal(request, "not_a_speech_search")
+        bans.record_refusal(request, SOFT)
 
     # One expiry per window, set by the FIRST refusal in it. Renewing on every refusal
     # would let an address that keeps probing hold its counter open indefinitely and
     # never age out of a window it is sitting just under.
     assert set(store.expiries.values()) == {3600, 86400}
+
+
+def test_one_hostile_query_bans_immediately(monkeypatch, store):
+    _configure(monkeypatch)
+    request = _request()
+
+    # The whole point of the second class: an unambiguous attack does not get fifteen
+    # more attempts first.
+    assert bans.record_refusal(request, HOSTILE) == 900
+    assert bans.banned_for(request) == 900
+
+
+def test_the_two_reasons_never_pool_their_counters(monkeypatch, store):
+    _configure(monkeypatch)
+    request = _request()
+
+    for _ in range(4):
+        bans.record_refusal(request, SOFT)
+
+    # Four soft refusals sit under the soft allowance and must not carry over into the
+    # hostile table, where they would look like four attacks.
+    assert bans.banned_for(request) == 0
+    keys = {k.split(":")[2] for k in store.counts}
+    assert keys == {SOFT}
+
+
+def test_a_soft_ban_never_shortens_a_hostile_one(monkeypatch, store):
+    _configure(monkeypatch, tiers={
+        SOFT: {3600: (1, 900)},
+        HOSTILE: {3600: (1, 86400)},
+    })
+    request = _request()
+
+    bans.record_refusal(request, HOSTILE)
+    assert bans.banned_for(request) == 86400
+
+    bans.record_refusal(request, SOFT)
+
+    # Both write one key. Overwriting would let someone serving a long hostile ban clear
+    # it by committing the cheaper offence once — the wrong offence deciding the
+    # sentence.
+    assert bans.banned_for(request) == 86400
+
+
+def test_a_longer_ban_does_replace_a_shorter_one(monkeypatch, store):
+    _configure(monkeypatch, tiers={
+        SOFT: {3600: (1, 900)},
+        HOSTILE: {3600: (1, 86400)},
+    })
+    request = _request()
+
+    bans.record_refusal(request, SOFT)
+    assert bans.banned_for(request) == 900
+
+    bans.record_refusal(request, HOSTILE)
+
+    # The rule is "never shorten", not "never change": escalation still has to work.
+    assert bans.banned_for(request) == 86400
+
+
+def test_an_unknown_reason_is_ignored_rather_than_guessed_at(monkeypatch, store):
+    _configure(monkeypatch)
+
+    # A refusal kind with no tier table earns no ban. A future class should have to be
+    # given a policy deliberately, not inherit one by accident.
+    assert bans.record_refusal(_request(), "some_future_reason") == 0
+    assert store.counts == {}
