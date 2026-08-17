@@ -14,12 +14,19 @@ import tipi_tasks
 # Imported eagerly, unlike the search service below: this module of qhld_ai is pure
 # domain logic with no dependencies of its own, so it costs nothing to a deployment
 # that excludes the search namespace.
+from qhld_ai.domain.errors import SearchRefused
 from qhld_ai.domain.subtitles import aligned_text, subtitle_track
 
 from tipi_data import DoesNotExist
 from tipi_data.models.alert import Alert, Search
 from tipi_data.models.scanned import Scanned as ScannedModel
-from tipi_data.models.query_gap import AMBIGUOUS, UNRESOLVED, QueryGapEvent
+from tipi_data.models.search_diagnostic import (
+    AMBIGUOUS,
+    KEY_MAX,
+    REFUSED_PREFIX,
+    UNRESOLVED,
+    SearchDiagnosticEvent,
+)
 from tipi_data.models.search_rating import SearchRating
 from tipi_data.repositories.alerts import Alerts
 from tipi_data.repositories.dataset_updates import DatasetUpdates
@@ -29,8 +36,8 @@ from tipi_data.repositories.initiativetypes import InitiativeTypes
 from tipi_data.repositories.knowledgebases import KnowledgeBases
 from tipi_data.repositories.parliamentarygroups import ParliamentaryGroups
 from tipi_data.repositories.places import Places
-from tipi_data.repositories.query_gaps import QueryGaps
 from tipi_data.repositories.scanned import Scanned
+from tipi_data.repositories.search_diagnostics import SearchDiagnostics
 from tipi_data.repositories.search_ratings import SearchRatings
 from tipi_data.repositories.sessions import Sessions
 from tipi_data.repositories.speech_alignments import SpeechAlignments
@@ -459,7 +466,55 @@ def _strip_accents(text):
                    if not unicodedata.combining(c))
 
 
-def _record_query_gaps(query, resolution, semantic_query):
+def _refusal_key(query):
+    """The canonical form that folds repeat sightings of one refused query together.
+
+    Its own normaliser rather than ``_gap_key``: that one is shaped for a value INSIDE a
+    query — it strips courtesy and role words, and drops function words that name nobody
+    — and running it over a whole sentence would throw away most of what distinguishes
+    one refused query from another.
+
+    Accents are folded for the same reason they are folded for people: the same query
+    typed with and without them is the same query. The model's own ceiling is reused
+    rather than restated, so the two cannot drift apart.
+    """
+    return _strip_accents(" ".join(query.split()).casefold())[:KEY_MAX]
+
+
+def _record_refusal(query, refusal):
+    """Keep the queries the search gates turned away.
+
+    The only record that a refusal happened: a refused query raises before a response
+    exists, returns 422 and — until this — wrote nothing at all, so neither gate could be
+    reviewed against real traffic.
+
+    The outcome is derived from the refusal's own ``reason`` rather than from its type.
+    Every refusal shares a base class, so an ``isinstance`` ladder silently files a new
+    kind under whichever branch happens to be first — the same trap that had to be pinned
+    by a test in the measurement harness. Deriving it means a future refusal records
+    itself correctly without touching this function.
+
+    Never raises: a search must not fail because bookkeeping did.
+    """
+    try:
+        SearchDiagnostics.record(SearchDiagnosticEvent(
+            field="query",
+            key=_refusal_key(query),
+            outcome=f"{REFUSED_PREFIX}{refusal.reason}",
+            # The query stands in for both the surface form and the context here: it IS
+            # the thing that was refused, and on a refusal there is no resolution to
+            # describe it with.
+            value=query,
+            query=query,
+            # Present only on a language refusal, which is the one case where the parser
+            # reached a verdict about the query worth keeping.
+            language=getattr(refusal, "language", None),
+            parser_model=_natural_search().settings.query_parser_llm_model))
+    except Exception:
+        log.exception("Could not record the refusal of %r", query)
+
+
+def _record_resolution_gaps(query, resolution, semantic_query):
     """Keep the people and themes this search could not identify.
 
     Free evidence for catalog curation: the resolver already reports what it could not
@@ -481,7 +536,7 @@ def _record_query_gaps(query, resolution, semantic_query):
             key = _gap_key(entity.field, entity.value)
             if not key:
                 continue
-            events.append(QueryGapEvent(
+            events.append(SearchDiagnosticEvent(
                 field=entity.field, key=key, outcome=UNRESOLVED, value=entity.value,
                 blocking=entity.blocking, suggestion=entity.suggestion,
                 query=query, semantic_query=semantic_query,
@@ -492,13 +547,13 @@ def _record_query_gaps(query, resolution, semantic_query):
             key = _gap_key(match.field, match.value)
             if not key:
                 continue
-            events.append(QueryGapEvent(
+            events.append(SearchDiagnosticEvent(
                 field=match.field, key=key, outcome=AMBIGUOUS, value=match.value,
                 chosen=match.chosen, tied=match.tied,
                 query=query, semantic_query=semantic_query,
                 filters=resolution.filters, parser_model=parser_model))
         for event in events:
-            QueryGaps.record(event)
+            SearchDiagnostics.record(event)
     except Exception:
         log.exception("Could not record the query gaps for %r", query)
 
@@ -514,16 +569,25 @@ def semantic_search_speeches(params):
     "show more" cache hits) and the ``natural_search`` span land in one trace
     instead of two roots. Inert unless LANGSMITH_TRACING is set."""
     today = date.today()
-    parsed = _parse_query(params["q"], today.isoformat())
-    result = _natural_search().execute(
-        params["q"],
-        today,
-        k=params["per_page"] + 1,
-        grouped=True,
-        highlights=params["highlights"],
-        exclude=set(params["exclude"]) or None,
-        parsed=parsed,
-    )
+    try:
+        parsed = _parse_query(params["q"], today.isoformat())
+        result = _natural_search().execute(
+            params["q"],
+            today,
+            k=params["per_page"] + 1,
+            grouped=True,
+            highlights=params["highlights"],
+            exclude=set(params["exclude"]) or None,
+            parsed=parsed,
+        )
+    except SearchRefused as refusal:
+        # A refusal raises before there is a response to hang bookkeeping off, so it is
+        # recorded here and re-raised unchanged for the endpoint to turn into a 422.
+        # Recorded from THIS function only, like the gaps below: ``speech_passages``
+        # re-resolves the same query to highlight a detail page and would refuse it a
+        # second time, counting one user's single search twice.
+        _record_refusal(params["q"], refusal)
+        raise
     has_more = len(result.hits) > params["per_page"]
     groups = result.hits[: params["per_page"]]
 
@@ -594,7 +658,7 @@ def semantic_search_speeches(params):
     }
     # After the response is assembled, so bookkeeping can never come between the user and
     # their results.
-    _record_query_gaps(params["q"], resolution, result.semantic_query)
+    _record_resolution_gaps(params["q"], resolution, result.semantic_query)
     return meta, results
 
 
