@@ -18,6 +18,11 @@ Caveat before trusting any of it: the container runs uvicorn with
 entry — a value the caller controls. A client rotating that header resets its own
 bucket. Narrowing that flag to the real proxy address is what makes the per-IP caps
 enforceable; until then ``_SPEND_CEILING`` is the only limit that actually holds.
+
+The caps bound how FAST one address searches, and nothing else. An address staying
+under them while spending every request on the intent gate is what ``api.bans``
+answers; it refuses to act while the flag above is still ``*``, for the same reason
+this caveat exists.
 """
 
 import logging
@@ -28,6 +33,7 @@ from fastapi.responses import JSONResponse
 
 from qhld_ai.domain.errors import SearchRefused
 from tipi_data import DoesNotExist
+from tipi_backend.api import bans
 from tipi_backend.api.business import semantic_search_speeches, speech_passages
 from tipi_backend.api.ratelimit import limiter
 from tipi_backend.api.request_models import SpeechPassagesQuery, SpeechSearchQuery
@@ -84,6 +90,9 @@ def search_speeches_semantic(
     the speeches come newest-first, and each card's passages are the start of the
     speech — nothing matched anything, so nothing should be shown as a match.
     """
+    rejected = bans.reject_if_banned(request)
+    if rejected is not None:
+        return rejected
     try:
         meta, results = semantic_search_speeches(query.model_dump())
     except SearchRefused as refusal:
@@ -93,6 +102,12 @@ def search_speeches_semantic(
         # error, not a service outage: 422, so the frontend can tell it apart from
         # the 503 below, and `reason` so it can say WHICH — the two need different
         # words, since a refused-for-language user did nothing wrong.
+        #
+        # Counted here rather than in `business`, so the caller's address stays in
+        # this layer: the collection that records WHAT was asked never learns who
+        # asked. Only this route counts — `/passages` re-resolves the same query for
+        # the detail page and would charge one caller twice for one search.
+        bans.record_refusal(request, refusal.reason)
         return JSONResponse(
             status_code=422,
             content={"Error": "Search refused", "reason": refusal.reason},
@@ -127,6 +142,9 @@ def speech_passages_for_query(
     uses this to highlight ALL of them in the transcript. Two path segments after
     ``/speeches`` so it never shadows (nor is shadowed by) ``/speeches/{id}``.
     """
+    rejected = bans.reject_if_banned(request)
+    if rejected is not None:
+        return rejected
     try:
         return {"passages": speech_passages(id, query.model_dump())}
     except DoesNotExist:
